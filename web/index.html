@@ -5,8 +5,7 @@
   <meta charset="utf-8">
   <title>Doom</title>
 
-  <script src="original-data.js"></script>
-  <script src="wall-data.js"></script>
+  <script src="data.js"></script>
   <script src="https://unpkg.com/aframe@0.8.2/dist/aframe-master.js"></script>
   <script src="https://unpkg.com/aframe-teleport-controls@0.3.1/dist/aframe-teleport-controls.js"></script>
 
@@ -51,7 +50,7 @@
 
   <a-scene>
 
-    <a-entity id="cameraRig">
+    <a-entity id="cameraRig" position="0 0 0" rotation="0 90 0">
       <a-entity id="head" camera wasd-controls look-controls></a-entity>
       <a-entity id="left-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trigger; collision-entities: .floor;"
         vive-controls="hand: left" oculus-touch-controls="hand: left" microsoft-motion-controls="hand: left"
@@ -69,17 +68,15 @@
 
     <img id="sky_sphere-texture" src="assets/SKY1.png">
     <a-sky color="#EEEEFF" ></a-sky>
-    
-    <a-plane position="4.72027972027972 16 -3.6713286713286664" rotation="0 1.5707963267948966 0" width="4.195804195804186" height="32" material="material color: #000; side: front; repeat: 0.13111888111888081 1;"></a-plane>
 
     <script>
 
       const addFloorsAndCeilings = () => {
-        const data = originalData
+        const { polygons } = map;
         // .filter(d => d.sectorId === 28);
 
-        for (let sectorIndex = 0; sectorIndex < data.length; sectorIndex += 1) {
-          const { floor, ceiling, floorHeight, ceilingHeight, polygon } = data[sectorIndex];
+        for (let sectorIndex = 0; sectorIndex < polygons.length; sectorIndex += 1) {
+          const { floor, ceiling, floorHeight, ceilingHeight, polygon, isSky } = polygons[sectorIndex];
           const vertices = polygon.map(polygon => `${polygon[0]} ${polygon[1]}`).join(', ');
 
           const floorPolygon = document.createElement('a-entity');
@@ -89,33 +86,36 @@
           floorPolygon.setAttribute('class', `floor`);
           document.querySelector('a-scene').appendChild(floorPolygon);
 
-          const ceilingPolygon = document.createElement('a-entity');
-          ceilingPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${ceilingHeight}; face: ceiling;`);
-          ceilingPolygon.setAttribute('material', `shader: flat; src: assets/${ceiling}.png; side: front; repeat: 1.0001 1.0001;`);
-          ceilingPolygon.setAttribute('class', `ceiling`);
-          document.querySelector('a-scene').appendChild(ceilingPolygon);
+          if (!isSky) {
+            const ceilingPolygon = document.createElement('a-entity');
+            ceilingPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${ceilingHeight}; face: ceiling;`);
+            ceilingPolygon.setAttribute('material', `shader: flat; src: assets/${ceiling}.png; side: front; repeat: 1.0001 1.0001;`);
+            ceilingPolygon.setAttribute('class', `ceiling`);
+            document.querySelector('a-scene').appendChild(ceilingPolygon);
+          }
         }
       }
       addFloorsAndCeilings();
 
       const addWalls = () => {
-        const data = wallData
-          .slice(10);
+        const data = map.planes
+          // .slice(10);
 
         for (let planeIndex = 0; planeIndex < data.length; planeIndex += 1) {
           const { width, x, y, z, height, rotation, src } = data[planeIndex];
 
           // <a-plane position="0 0 -20" rotation="0 45 0" width="49.2" height="40" material="src: assets/NUKAGE3.png; repeat: 1.23 1;"></a-plane>
 
-          const wallPlane = document.createElement('a-plane');
-
-          wallPlane.setAttribute('position', `${x} ${y} ${z * -1}`);
-          wallPlane.setAttribute('rotation', `0 ${rotation * (180 / Math.PI)} 0`);
-          wallPlane.setAttribute('width', width);
-          wallPlane.setAttribute('height', height);
-          wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${width / height} 1;`);
-          wallPlane.setAttribute('class', `wall`);
-          document.querySelector('a-scene').appendChild(wallPlane);
+          if (height > 0.0001) {
+            const wallPlane = document.createElement('a-plane');
+            wallPlane.setAttribute('position', `${x} ${y} ${z * -1}`);
+            wallPlane.setAttribute('rotation', `0 ${rotation * (180 / Math.PI)} 0`);
+            wallPlane.setAttribute('width', width);
+            wallPlane.setAttribute('height', height);
+            wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${width / height} 1;`);
+            wallPlane.setAttribute('class', `wall`);
+            document.querySelector('a-scene').appendChild(wallPlane);
+          }
         }
       }
       addWalls();

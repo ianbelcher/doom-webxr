@@ -81,7 +81,7 @@ const main = async () => {
       const rise = endPoint.y - startPoint.y; // y movement
       const run = endPoint.x - startPoint.x; // x movement
       const rightSideRotation = Math.atan2(rise, run); // https://math.stackexchange.com/a/2587852
-      const leftSideRotation = (rightSideRotation + 180) % 360; // The inverse angle of the rightSideRotation
+      const leftSideRotation = Math.atan2(-1 * rise, -1 * run);; // The inverse angle of the rightSideRotation
       const plane = {
         width: scaled(Math.sqrt(Math.pow(rise, 2) + Math.pow(run, 2))), // Distance / pythagoras
         x: scaled((startPoint.x + endPoint.x) / 2, 'x'), // Middle

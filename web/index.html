@@ -50,7 +50,7 @@
 <body>
 
   <a-scene>
-
+    <a-entity cursor="rayOrigin: mouse"></a-entity>
     <a-entity id="cameraRig" position="0 0 0" rotation="0 0 0">
       <a-entity id="head" camera wasd-controls="fly: true; acceleration: 180;" look-controls></a-entity>
       <a-entity id="left-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trigger; collision-entities: .floor;"
@@ -65,7 +65,7 @@
 
 
     <a-entity light="type: directional; color: #FFF; intensity: 0.5" position="2 20 0"></a-entity>
-    <a-entity light="type: ambient; color: #ccc"></a-entity>
+    <a-entity light="type: ambient; color: #888"></a-entity>
 
     <!-- <img id="sky_sphere-texture" src="assets/SKY1.png"> -->
     <!-- <a-sky color="#EEEEFF" src="#sky_sphere-texture"></a-sky> -->
@@ -91,14 +91,14 @@
           const floorPolygon = document.createElement('a-entity');
           floorPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${floorHeight}; face: floor;`);
           // floorPolygon.setAttribute('material', `color: #fff; side: front;`);
-          floorPolygon.setAttribute('material', `shader: flat; src: assets/${floor}.png; side: front; repeat: 1.0001 1.0001;`);
+          floorPolygon.setAttribute('material', `shader: flat; src: assets/${floor}.png; side: front; repeat: 0.325 0.325;`);
           floorPolygon.setAttribute('class', `floor`);
           document.querySelector('a-scene').appendChild(floorPolygon);
 
           if (!isSky) {
             const ceilingPolygon = document.createElement('a-entity');
             ceilingPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${ceilingHeight}; face: ceiling;`);
-            ceilingPolygon.setAttribute('material', `shader: flat; src: assets/${ceiling}.png; side: front; repeat: 1.0001 1.0001;`);
+            ceilingPolygon.setAttribute('material', `shader: flat; src: assets/${ceiling}.png; side: front; repeat: 0.325 0.325;`);
             ceilingPolygon.setAttribute('class', `ceiling`);
             document.querySelector('a-scene').appendChild(ceilingPolygon);
           }
@@ -110,7 +110,7 @@
         for (let planeIndex = 0; planeIndex < map.planes.length; planeIndex += 1) {
           const { width, x, y, z, height, rotation, src } = map.planes[planeIndex];
 
-          const sizeFactorX = 31;
+          const sizeFactorX = 30.75;
           const sizeFactorY = 31;
           const { width: imageWidth, height: imageHeight } = sizes[src];
           const xRepeat = (width / imageWidth) * sizeFactorX;

@@ -6,6 +6,7 @@
   <title>Doom</title>
 
   <script src="data.js"></script>
+  <script src="sizes.js"></script>
   <script src="https://unpkg.com/aframe@0.8.2/dist/aframe-master.js"></script>
   <script src="https://unpkg.com/aframe-teleport-controls@0.3.1/dist/aframe-teleport-controls.js"></script>
 
@@ -50,8 +51,8 @@
 
   <a-scene>
 
-    <a-entity id="cameraRig" position="0 0 0" rotation="0 90 0">
-      <a-entity id="head" camera wasd-controls look-controls></a-entity>
+    <a-entity id="cameraRig" position="0 0 0" rotation="0 0 0">
+      <a-entity id="head" camera wasd-controls="fly: true; acceleration: 180;" look-controls></a-entity>
       <a-entity id="left-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trigger; collision-entities: .floor;"
         vive-controls="hand: left" oculus-touch-controls="hand: left" microsoft-motion-controls="hand: left"
         daydream-controls="hand: left" gearvr-controls="hand: left">
@@ -66,8 +67,16 @@
     <a-entity light="type: directional; color: #FFF; intensity: 0.5" position="2 20 0"></a-entity>
     <a-entity light="type: ambient; color: #ccc"></a-entity>
 
-    <img id="sky_sphere-texture" src="assets/SKY1.png">
-    <a-sky color="#EEEEFF" ></a-sky>
+    <!-- <img id="sky_sphere-texture" src="assets/SKY1.png"> -->
+    <!-- <a-sky color="#EEEEFF" src="#sky_sphere-texture"></a-sky> -->
+    
+    <a-sky color="#EEEEFF"></a-sky>
+    <a-image src="skys/01_FR.png" width="1000" height="1000" position="0 0 -500" rotation="0 0 0"></a-image>
+    <a-image src="skys/01_BK.png" width="1000" height="1000" position="0 0 500" rotation="0 180 0"></a-image>
+    <a-image src="skys/01_RT.png" width="1000" height="1000" position="-500 0 0" rotation="0 90 0"></a-image>
+    <a-image src="skys/01_LF.png" width="1000" height="1000" position="500 0 0" rotation="0 -90 0"></a-image>
+    <a-image src="skys/01_UP.png" width="1000" height="1000" position="0 500 0" rotation="270 0 0"></a-image>
+    <a-image src="skys/01_DN.png" width="1000" height="1000" position="0 -500 0" rotation="-90 0 0"></a-image>
 
     <script>
 
@@ -98,13 +107,14 @@
       addFloorsAndCeilings();
 
       const addWalls = () => {
-        const data = map.planes
-          // .slice(10);
+        for (let planeIndex = 0; planeIndex < map.planes.length; planeIndex += 1) {
+          const { width, x, y, z, height, rotation, src } = map.planes[planeIndex];
 
-        for (let planeIndex = 0; planeIndex < data.length; planeIndex += 1) {
-          const { width, x, y, z, height, rotation, src } = data[planeIndex];
-
-          // <a-plane position="0 0 -20" rotation="0 45 0" width="49.2" height="40" material="src: assets/NUKAGE3.png; repeat: 1.23 1;"></a-plane>
+          const sizeFactorX = 31;
+          const sizeFactorY = 31;
+          const { width: imageWidth, height: imageHeight } = sizes[src];
+          const xRepeat = (width / imageWidth) * sizeFactorX;
+          const yRepeat = (height / imageHeight) * sizeFactorY;
 
           if (height > 0.0001) {
             const wallPlane = document.createElement('a-plane');
@@ -112,7 +122,7 @@
             wallPlane.setAttribute('rotation', `0 ${rotation * (180 / Math.PI)} 0`);
             wallPlane.setAttribute('width', width);
             wallPlane.setAttribute('height', height);
-            wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${width / height} 1;`);
+            wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${xRepeat} ${yRepeat};`);
             wallPlane.setAttribute('class', `wall`);
             document.querySelector('a-scene').appendChild(wallPlane);
           }

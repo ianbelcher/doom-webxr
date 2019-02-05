@@ -31,7 +31,8 @@ const main = async () => {
     const scale = 0.0325; // The factor we use to size the map coordinates etc.
     const scaled = (number, dimension = 'none') => (scale * (number - centerOfMass[dimension])) ;
 
-    const isSky = (sector) => ['F_SKY1', 'SKY1', 'SKY2', 'SKY3', 'SKY4' ].indexOf(sector.ceiling) !== -1;
+    const isSky = (sector) => 
+      ['F_SKY1', 'SKY1', 'SKY2', 'SKY3', 'SKY4' ].indexOf(sector.ceiling) !== -1;
 
     // -- Sidedefs look like the following
     // { x: 0,
@@ -96,7 +97,7 @@ const main = async () => {
           src: leftSideDef.middle,
         });
       }
-      if (leftSideDef && leftSideDef.upper !== '-') {
+      if (leftSideDef && leftSideDef.upper !== '-' && (rightSideSector ? !isSky(rightSideSector) : true)) {
         planes.push({
           ...plane,
           y: scaled((leftSideSector.ceilingHeight + rightSideSector.ceilingHeight) / 2, 'y'),
@@ -105,7 +106,7 @@ const main = async () => {
           src: leftSideDef.upper,
         });
       }
-      if (leftSideDef && leftSideDef.lower !== '-' && rightSideSector) {
+      if (leftSideDef && leftSideDef.lower !== '-' && (rightSideSector ? !isSky(rightSideSector) : true)) {
         planes.push({
           ...plane,
           y: scaled((rightSideSector.floorHeight + leftSideSector.floorHeight) / 2, 'y'),
@@ -124,7 +125,7 @@ const main = async () => {
           src: rightSideDef.middle,
         });
       }
-      if (rightSideDef && rightSideDef.upper !== '-' && leftSideSector) {
+      if (rightSideDef && rightSideDef.upper !== '-' && (leftSideSector ? !isSky(leftSideSector) : true)) {
         planes.push({
           ...plane,
           y: scaled((rightSideSector.ceilingHeight + leftSideSector.ceilingHeight) / 2, 'y'),
@@ -133,7 +134,7 @@ const main = async () => {
           src: rightSideDef.upper,
         });
       }
-      if (rightSideDef && rightSideDef.lower !== '-' && leftSideSector) {
+      if (rightSideDef && rightSideDef.lower !== '-' && (leftSideSector ? !isSky(leftSideSector) : true)) {
         planes.push({
           ...plane,
           y: scaled((leftSideSector.floorHeight + rightSideSector.floorHeight) / 2, 'y'),

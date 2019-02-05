@@ -1,6 +1,6 @@
 {
   "dependencies": {
     "@nrkn/wad": "0.0.2",
-    "@rojo2/wad-parser": "^1.0.1"
+    "image-size": "^0.7.1"
   }
 }

@@ -122,7 +122,7 @@
             wallPlane.setAttribute('rotation', `0 ${rotation * (180 / Math.PI)} 0`);
             wallPlane.setAttribute('width', width);
             wallPlane.setAttribute('height', height);
-            wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${xRepeat} ${yRepeat};`);
+            wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${xRepeat} ${yRepeat}; alphaTest: 0.9;`);
             wallPlane.setAttribute('class', `wall`);
             document.querySelector('a-scene').appendChild(wallPlane);
           }

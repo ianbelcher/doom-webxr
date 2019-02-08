@@ -110,7 +110,7 @@ const main = async () => {
           src: leftSideDef.upper,
         });
       }
-      if (leftSideDef && leftSideDef.lower !== '-' && (rightSideSector ? !isSky(rightSideSector) : true)) {
+      if (leftSideDef && leftSideDef.lower !== '-') {
         planes.push({
           ...plane,
           y: scaled((rightSideSector.floorHeight + leftSideSector.floorHeight) / 2, 'y'),
@@ -138,7 +138,7 @@ const main = async () => {
           src: rightSideDef.upper,
         });
       }
-      if (rightSideDef && rightSideDef.lower !== '-' && (leftSideSector ? !isSky(leftSideSector) : true)) {
+      if (rightSideDef && rightSideDef.lower !== '-') {
         planes.push({
           ...plane,
           y: scaled((leftSideSector.floorHeight + rightSideSector.floorHeight) / 2, 'y'),
@@ -177,7 +177,124 @@ const main = async () => {
           break;
         }
       }
+
+      // Ensure all our polygons turn in the same direction.
+      // @see https://stackoverflow.com/a/1165943/981598
+      let anglesSum = 0;
+      for (let edgeIndex = 0; edgeIndex < polygon.length; edgeIndex += 1) {
+        // Last entry references the first
+        const edgeIndexNext = edgeIndex !== polygon.length - 1 ? edgeIndex + 1 : 0;
+        console.log(polygon[edgeIndexNext].x, polygon[edgeIndex].x, polygon[edgeIndexNext].y, polygon[edgeIndex].y)
+        anglesSum += (polygon[edgeIndexNext].x - polygon[edgeIndex].x) * (polygon[edgeIndexNext].y + polygon[edgeIndex].y);
+      }
+      if (anglesSum < 0) { 
+        polygon.reverse();
+      }
       return polygon;
+    }
+
+    // This gets pretty complicated. Sectors can fully enclose other sectors (think the pool outside in E1M1).
+    // We need to carve out these sections in the outer sector polygon to avoid having the floor or ceiling covering
+    // the inner sector. It also means that only one sector can exist in any given spot which allows us to determine 
+    // heights of things and other assets in the map.
+    // Algorithm we're using is
+    // Take a vertex each polygon and ray-trace it against the current. If that vertex point is _inside_ (not a
+    // shared vertex) then we assume it that the current polygon envelopes that polygon. (Doom can't have intersecting
+    // polygon edges)
+    // Find the two closest vertices from the outer and inner polygons.
+    // Added inner polygon points to the outer at that point of the array, returning to the original point.
+    const carveOutOverlappingPolygons = ({ polygon: currentPolygon, bounds: currentBounds, sectorId: currentSectorId }, index, allSectors) => {
+      // if (currentSectorId !== 12) return;
+      allSectors.forEach(({ polygon: toCheckPolygon, sectorId: toCheckSectorId }) => {
+        // if (toCheckSectorId !== 13) return;
+        // We take a point from the toCheckPolygon which doesn't share a common vertex with the currentPolygon
+        const result = toCheckPolygon.find(([x, y]) => !currentPolygon.find(vertex => vertex[0] === x && vertex[1] === y));
+        // If polygons are equal or share all points ignore them.
+        if (!result) return;
+        const [x, y] = result;
+        
+        // Initially check bounds which is computationally much cheaper
+        if (
+          currentBounds[0][0] <= x && currentBounds[1][0] >= x &&
+          currentBounds[0][1] <= y && currentBounds[1][1] >= y
+        ) {
+          // Ray-trace along x axis. Find all points where a currentPolygon edge crossed over the x axis at a position xIntersect 
+          // (or where the start of the edge and the y vertex share a common value and the flanking values are above and below) 
+          // and where the intersect is less than the given x. If we have an odd number of results, the point is inside the currentPolygon.
+          let intersectingEdges = 0
+          for (let edgeIndex = 0; edgeIndex < currentPolygon.length; edgeIndex += 1) {
+            // Last entry references the first
+            const edgeIndexNext = edgeIndex !== currentPolygon.length - 1 ? edgeIndex + 1 : 0;
+            const edgeIndexPrevious = edgeIndex ? edgeIndex - 1 : currentPolygon.length - 1;
+            // console.log(x, y, currentPolygon[edgeIndex], currentPolygon[edgeIndexNext])
+            if (
+              (currentPolygon[edgeIndex][1] < y && currentPolygon[edgeIndexNext][1] > y)
+              ||
+              (currentPolygon[edgeIndex][1] > y && currentPolygon[edgeIndexNext][1] < y)
+              ) {
+                // We have an intersection of the x axis. Calculate the xIntersect.
+                const totalRise = currentPolygon[edgeIndexNext][1] - currentPolygon[edgeIndex][1];
+                const intersectRise = y - currentPolygon[edgeIndex][1];
+                const totalRun = currentPolygon[edgeIndexNext][0] - currentPolygon[edgeIndex][0];
+                const xIntersect = ((intersectRise / totalRise) * totalRun) + currentPolygon[edgeIndex][0];
+
+                if (xIntersect < x) {
+                  intersectingEdges += 1;
+                }
+            }
+            if (
+              currentPolygon[edgeIndex][0] < x && currentPolygon[edgeIndex][1] === y &&
+              (
+                (currentPolygon[edgeIndexPrevious][1] < y && currentPolygon[edgeIndexNext][1] > y)
+                ||
+                (currentPolygon[edgeIndexPrevious][1] > y && currentPolygon[edgeIndexNext][1] < y)
+              )
+            ) {
+                // We have a shared point on the y axis. The xIntersect is simply equal to the currentPolygons x 
+                // value which checked was < x above
+                intersectingEdges += 1;
+            }
+          
+          }
+
+          if (intersectingEdges % 2 > 0) {
+            let bestResult = {
+              distance: Infinity,
+            } 
+            currentPolygon.forEach((currentPolygonVertex) => {
+              toCheckPolygon.forEach((toCheckPolygonVertex) => {
+                // No need to sqrt here... The result doesn't need to actual distance units.
+                const distance = Math.pow(toCheckPolygonVertex[0] - currentPolygonVertex[0], 2) + Math.pow(toCheckPolygonVertex[1] - currentPolygonVertex[1], 2);
+                if (distance < bestResult.distance) {
+                  bestResult = {
+                    currentPolygonBestVertex: currentPolygonVertex,
+                    toCheckPolygonBestVertex: toCheckPolygonVertex,
+                    distance,
+                  }
+                }
+              });
+            });
+
+            toCheckPolygonReversed = toCheckPolygon.reverse();
+
+            currentPolygon = [
+              ...currentPolygon.slice(currentPolygon.indexOf(bestResult.currentPolygonBestVertex)),
+              ...currentPolygon.slice(0, currentPolygon.indexOf(bestResult.currentPolygonBestVertex)),
+              bestResult.currentPolygonBestVertex,
+              bestResult.toCheckPolygonBestVertex,
+              ...toCheckPolygonReversed.slice(toCheckPolygonReversed.indexOf(bestResult.toCheckPolygonBestVertex)),
+              ...toCheckPolygonReversed.slice(0, toCheckPolygonReversed.indexOf(bestResult.toCheckPolygonBestVertex)),
+              bestResult.toCheckPolygonBestVertex,
+              bestResult.currentPolygonBestVertex,
+            ];
+          }
+        }
+      });
+
+      console.log(currentSectorId);
+      console.log(currentPolygon);
+
+      polygons[index].polygon = currentPolygon;
     }
 
     const polygons = sectors.map((sector, index) => {
@@ -185,6 +302,7 @@ const main = async () => {
         .map((sidedef, index) => ({ ...sidedef, index }))
         .filter(sidedef => sidedef.sector === index)
         .map(sidedef => {
+          // TODO: Sector 16 in E1M1. This is not the right way to do this. Sectors can have holes in them.
           // Find the corresponding linedef for this sidedef and the sidedef from the other side if it exists.
           const linedef = linedefs.find(linedef => linedef.rightSidedef === sidedef.index || linedef.leftSidedef === sidedef.index)
           const otherSide = linedef.rightSidedef === sidedef.index ? linedef.leftSidedef : linedef.rightSidedef
@@ -196,6 +314,21 @@ const main = async () => {
           }
         });
 
+      // To debug and use original polygon values.
+      // const polygon = getSectorPolygon(sectorSidedefs).map(i => [i.x, i.y])
+      const polygon = getSectorPolygon(sectorSidedefs).map(i => [scaled(i.x, 'x'), scaled(i.y, 'z')])
+      
+      const bounds = polygon.reduce((accumulator, point) => ([
+        [
+          Math.min(accumulator[0][0], point[0]),
+          Math.min(accumulator[0][1], point[1]),
+        ],
+        [
+          Math.max(accumulator[1][0], point[0]),
+          Math.max(accumulator[1][1], point[1]),
+        ]
+      ]), [[Infinity, Infinity],[-Infinity, -Infinity]]);
+
       return {
         ...sector,
         sectorId: index,
@@ -203,9 +336,12 @@ const main = async () => {
         floorHeight: scaled(sector.floorHeight),
         ceilingHeight: scaled(sector.ceilingHeight),
         // sidedefs,
-        polygon: getSectorPolygon(sectorSidedefs).map(i => [scaled(i.x, 'x'), scaled(i.y, 'z')]),
+        polygon,
+        bounds,
       }
     });
+      
+    polygons.forEach(carveOutOverlappingPolygons);
 
     let startPosition;
     const sprites = things.map(({ x, y: z, type, angle }) => {

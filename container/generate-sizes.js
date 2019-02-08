@@ -24,7 +24,7 @@ const main = async () => {
 
     await Promise.all(promises);
 
-    await writeFile('/web/sizes.js', `const sizes = ${JSON.stringify(sizes)}`);
+    await writeFile('./sizes.json', JSON.stringify(sizes));
 
   } catch (error) {
     console.error(error);

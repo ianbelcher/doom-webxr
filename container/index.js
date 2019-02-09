@@ -39,7 +39,7 @@ const main = async () => {
       none: v => v,
     }
 
-    const scale = 0.0325; // The factor we use to size the map coordinates etc.
+    const scale = 0.0625; // The factor we use to size the map coordinates etc.
     const scaled = (number, dimension = 'none') => (scale * axisFunction[dimension](number - centerOfMass[dimension]));
     // const scaled = (number, dimension = 'none') => number;
 
@@ -169,30 +169,105 @@ const main = async () => {
       .filter(i => i.height > 0.0001);
 
 
-    const getSectorPolygon = (sidedefs) => {
-      // Make a copy of the sidedefs object for our own purposes
-      const sides = [...sidedefs];
-      // Populate the start of the polygon and the next coordinate that we're looking for
-      const polygon = [sides[0].start];
-      let nextCoordinate = sides[0].end;
-      sides.splice(0, 1);
-      while (sides.length) {
-        // Iterate through the sides and connect them all up together.
-        polygon.push(nextCoordinate);
-        const nextSidedefStart = sides.find(sd => sd.start.x === nextCoordinate.x && sd.start.y === nextCoordinate.y);
-        const nextSidedefEnd = sides.find(sd => sd.end.x === nextCoordinate.x && sd.end.y === nextCoordinate.y);
-        if (nextSidedefStart) {
-          // There is a side that starts with the ending coordinate of the last side we observed. Use it as the next one.
-          sides.splice(sides.indexOf(nextSidedefStart), 1);
-          nextCoordinate = nextSidedefStart.end;
-        } else if (nextSidedefEnd) {
-          // There is a side that ends with the ending coordinate of the last side we observed. Use it as the next one.
-          sides.splice(sides.indexOf(nextSidedefEnd), 1);
-          nextCoordinate = nextSidedefEnd.start;
+    const getSectorPolygonForSectorIndex = (index) => {
+      console.log(`Starting ${index}`);
+      const allSectorLinedefs = sidedefs
+        .map((sidedef, index) => ({ ...sidedef, index }))
+        .filter(sidedef => sidedef.sector === index)
+        .reduce((accumulator, sidedef) => {
+          const linedefsForThisSidedef = linedefs
+            .filter(linedef => linedef.rightSidedef === sidedef.index || linedef.leftSidedef === sidedef.index)
+            .map(linedef => {
+              const otherSide = linedef.rightSidedef === sidedef.index ? linedef.leftSidedef : linedef.rightSidedef
+              return {
+                ...sidedef,
+                start: vertexes[linedef.startVertex],
+                end: vertexes[linedef.endVertex],
+                otherSector: sidedefs[otherSide] ? sidedefs[otherSide].sector : undefined,
+              };
+            });
+
+          return [
+            ...accumulator,
+            ...linedefsForThisSidedef,
+          ];
+        }, [])
+        .filter(linedef => linedef.otherSector !== index)
+        ;
+
+      const polygonBuckets = [[]];
+      while (allSectorLinedefs.length) {
+        polygonBucketIndex = polygonBuckets.length - 1;
+        currentBucket = polygonBuckets[polygonBucketIndex];
+        if (!currentBucket.length) {
+          // If the current bucket is empty, add the first value as a start (this value hasn't fit in a previous bucket).
+          currentBucket.push(allSectorLinedefs.splice(0, 1)[0]);
         } else {
-          break;
+          // Otherwise, find a value in the remaining list that will fit in this bucket.
+          const linedefForBucket = allSectorLinedefs.find(
+            ({ start: { x: xs1, y: ys1 }, end: { x: xe1, y: ye1 } }) =>
+              currentBucket.find(
+                ({ start: { x: xs2, y: ys2 }, end: { x: xe2, y: ye2 } }) =>
+                  xs1 === xs2 && ys1 === ys2 || // start === start
+                  xe1 === xe2 && ye1 === ye2 || // end === end
+                  xs1 === xe2 && ys1 === ye2 || // start === end
+                  xe1 === xs2 && ye1 === ys2    // end == start
+              )
+          );
+          if (linedefForBucket) {
+            // Remove the current linedefForBucket from the list and add it to the current bucket
+            currentBucket.push(allSectorLinedefs.splice(allSectorLinedefs.indexOf(linedefForBucket), 1)[0]);
+          } else {
+            // Start a new bucket, we don't have any other values which fit in this bucket.
+            polygonBuckets.push([]);
+          }
         }
       }
+
+      const polygons = polygonBuckets.map(sides => {
+        // Populate the start of the polygon and the next coordinate that we're looking for
+        const polygon = [sides[0].start];
+        let nextCoordinate = sides[0].end;
+        sides.splice(0, 1);
+        while (sides.length) {
+          // Iterate through the sides and connect them all up together.
+          polygon.push(nextCoordinate);
+          const nextSidedefStart = sides.find(sd => sd.start.x === nextCoordinate.x && sd.start.y === nextCoordinate.y);
+          const nextSidedefEnd = sides.find(sd => sd.end.x === nextCoordinate.x && sd.end.y === nextCoordinate.y);
+          if (nextSidedefStart) {
+            // There is a side that starts with the ending coordinate of the last side we observed. Use it as the next one.
+            sides.splice(sides.indexOf(nextSidedefStart), 1);
+            nextCoordinate = nextSidedefStart.end;
+          } else if (nextSidedefEnd) {
+            // There is a side that ends with the ending coordinate of the last side we observed. Use it as the next one.
+            sides.splice(sides.indexOf(nextSidedefEnd), 1);
+            nextCoordinate = nextSidedefEnd.start;
+          } else {
+            // Looks like we have a figure 8 polygon where the polygon is squeezed down to a width of 0 through a shared vertex
+            // See E4M9#S138 as an example. In this case for now, just ignore the remaining part of the sector.
+            console.log(`Incomplete polygon... Leaving as we have ${sides.length} sides left.`);
+            console.log(`Sides: ${JSON.stringify(sides)}`);
+            console.log(`polygon: ${JSON.stringify(polygon)}`);
+            break;
+          }
+        }
+        return polygon;
+      })
+
+      let polygon;
+      if (polygons.length === 1) {
+        polygon = polygons[0]
+      } else {
+        // We've managed to create more than one polygon for this sector, find out which one is the encompassing one.
+        polygon = polygons.slice(1).reduce((largest, current) => {
+          const nonExclusivePoint = current.find(({x, y}) => !largest.find(vertex => vertex.x === x && vertex.y === y));
+          if (pointIsInPolygon(nonExclusivePoint[0], nonExclusivePoint[1], largest)) {
+            return current;
+          }
+          return largest;
+        }, polygons.slice(0, 1)[0]);
+      }
+      
 
       // Ensure all our polygons turn in the same direction.
       // @see https://stackoverflow.com/a/1165943/981598
@@ -202,7 +277,7 @@ const main = async () => {
         const edgeIndexNext = edgeIndex !== polygon.length - 1 ? edgeIndex + 1 : 0;
         anglesSum += (polygon[edgeIndexNext].x - polygon[edgeIndex].x) * (polygon[edgeIndexNext].y + polygon[edgeIndex].y);
       }
-      if (anglesSum < 0) { 
+      if (anglesSum < 0) {
         polygon.reverse();
       }
       return polygon;
@@ -226,18 +301,18 @@ const main = async () => {
           (polygon[edgeIndex][1] < y && polygon[edgeIndexNext][1] > y)
           ||
           (polygon[edgeIndex][1] > y && polygon[edgeIndexNext][1] < y)
-          ) {
-            // We have an intersection of the x axis. Calculate the xIntersect.
-            const totalRise = polygon[edgeIndexNext][1] - polygon[edgeIndex][1];
-            const intersectRise = y - polygon[edgeIndex][1];
-            const totalRun = polygon[edgeIndexNext][0] - polygon[edgeIndex][0];
-            const xIntersect = ((intersectRise / totalRise) * totalRun) + polygon[edgeIndex][0];
+        ) {
+          // We have an intersection of the x axis. Calculate the xIntersect.
+          const totalRise = polygon[edgeIndexNext][1] - polygon[edgeIndex][1];
+          const intersectRise = y - polygon[edgeIndex][1];
+          const totalRun = polygon[edgeIndexNext][0] - polygon[edgeIndex][0];
+          const xIntersect = ((intersectRise / totalRise) * totalRun) + polygon[edgeIndex][0];
 
-            if (xIntersect < x) {
-              intersectingEdges += 1;
-            }
+          if (xIntersect < x) {
+            intersectingEdges += 1;
+          }
         }
-        
+
         if (polygon[edgeIndex][0] < x && polygon[edgeIndex][1] === y && polygon[edgeIndexPrevious][1] !== y) {
           while (polygon[edgeIndexNext][1] === y) {
             edgeIndexNext = nextIndex(edgeIndexNext);
@@ -255,7 +330,6 @@ const main = async () => {
             intersectingEdges += 1;
           }
         }
-      
       }
 
       return intersectingEdges % 2 > 0;
@@ -280,17 +354,17 @@ const main = async () => {
         // be contiguous.
         if (!result) return;
         const [x, y] = result;
-        
+
         // Initially check bounds which is computationally much cheaper then the ray-trace if required.
         if (
           currentBounds[0][0] <= x && currentBounds[1][0] >= x &&
-          currentBounds[0][1] <= y && currentBounds[1][1] >= y && 
+          currentBounds[0][1] <= y && currentBounds[1][1] >= y &&
           pointIsInPolygon(x, y, currentPolygon)
         ) {
-          
+
           let closestTwoVertices = {
             distance: Infinity,
-          } 
+          }
           currentPolygon.forEach((currentPolygonVertex) => {
             toCheckPolygon.forEach((toCheckPolygonVertex) => {
               // No need to sqrt here... The result doesn't need to actual distance units.
@@ -306,7 +380,7 @@ const main = async () => {
           });
 
           const { currentPolygonBestVertex, toCheckPolygonBestVertex } = closestTwoVertices;
-          
+
           // Add a carved out section to the currentPolygon of the reversed toCheckPolygon. This will result in a non-intersecting
           // concave polygon that does not include the the toCheckPolygon
           toCheckPolygonReversed = toCheckPolygon.reverse();
@@ -327,24 +401,9 @@ const main = async () => {
     }
 
     const polygons = sectors.map((sector, index) => {
-      const sectorSidedefs = sidedefs
-        .map((sidedef, index) => ({ ...sidedef, index }))
-        .filter(sidedef => sidedef.sector === index)
-        .map(sidedef => {
-          // TODO: Sector 16 in E1M1. This is not the right way to do this. Sectors can have holes in them.
-          // Find the corresponding linedef for this sidedef and the sidedef from the other side if it exists.
-          const linedef = linedefs.find(linedef => linedef.rightSidedef === sidedef.index || linedef.leftSidedef === sidedef.index)
-          const otherSide = linedef.rightSidedef === sidedef.index ? linedef.leftSidedef : linedef.rightSidedef
-          return {
-            ...sidedef,
-            start: vertexes[linedef.startVertex],
-            end: vertexes[linedef.endVertex],
-            otherSector: sidedefs[otherSide] ? sidedefs[otherSide].sector : undefined,
-          }
-        });
 
-      const polygon = getSectorPolygon(sectorSidedefs).map(i => [scaled(i.x, 'x'), scaled(i.y, 'z')])
-      
+      const polygon = getSectorPolygonForSectorIndex(index).map(i => [scaled(i.x, 'x'), scaled(i.y, 'z')])
+
       const bounds = polygon.reduce((accumulator, point) => ([
         [
           Math.min(accumulator[0][0], point[0]),
@@ -354,7 +413,7 @@ const main = async () => {
           Math.max(accumulator[1][0], point[0]),
           Math.max(accumulator[1][1], point[1]),
         ]
-      ]), [[Infinity, Infinity],[-Infinity, -Infinity]]);
+      ]), [[Infinity, Infinity], [-Infinity, -Infinity]]);
 
       return {
         ...sector,
@@ -362,18 +421,17 @@ const main = async () => {
         isSky: isSky(sector),
         floorHeight: scaled(sector.floorHeight),
         ceilingHeight: scaled(sector.ceilingHeight),
-        // sidedefs,
         polygon,
         bounds,
       }
     });
-      
+
     polygons.forEach(carveOutOverlappingPolygons);
 
     const getSectorForPoint = (x, y) => {
       return polygons.find(sector => (
         sector.bounds[0][0] <= x && sector.bounds[1][0] >= x &&
-        sector.bounds[0][1] <= y && sector.bounds[1][1] >= y && 
+        sector.bounds[0][1] <= y && sector.bounds[1][1] >= y &&
         pointIsInPolygon(x, y, sector.polygon)
       ));
     }
@@ -382,7 +440,7 @@ const main = async () => {
     const sprites = things.map(({ x, y, type, angle }, index) => {
       const thingDefinition = thingLookup.find(i => i[0] === type);
       if (!thingDefinition) return undefined;
-      const [ id, /* idHex */, /* version */, size, sprite, sequence ] = thingDefinition;
+      const [id, /* idHex */, /* version */, size, sprite, sequence] = thingDefinition;
       if (['none', 'none1', 'none4', 'none6'].indexOf(sprite) !== -1) return undefined;
       const sector = getSectorForPoint(scaled(x, 'x'), scaled(y, 'z'));
       if (!sector) {
@@ -414,9 +472,10 @@ const main = async () => {
         x: scaled(x, 'x'),
         y: sector.floorHeight + scaled(assetSizes[src[0].replace('.png', '')].height / 2, 'y'),
         z: scaled(y, 'z'),
+        angle: angle * (Math.PI / 180),
       }
     })
-    .filter( i => i);
+      .filter(i => i);
 
     await writeFile('/web/data.js', `const map = ${JSON.stringify({ planes, polygons, sprites, startPosition, assetSizes, skyNumber })}`);
 

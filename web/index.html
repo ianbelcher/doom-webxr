@@ -104,90 +104,98 @@
     <!-- <img id="sky_sphere-texture" src="assets/SKY1.png"> -->
     <!-- <a-sky color="#EEEEFF" src="#sky_sphere-texture"></a-sky> -->
     
-    <a-sky color="#EEEEFF"></a-sky>
-    <a-image src="skys/01_FR.png" width="1000" height="1000" position="0 0 -500" rotation="0 0 0"></a-image>
-    <a-image src="skys/01_BK.png" width="1000" height="1000" position="0 0 500" rotation="0 180 0"></a-image>
-    <a-image src="skys/01_RT.png" width="1000" height="1000" position="-500 0 0" rotation="0 90 0"></a-image>
-    <a-image src="skys/01_LF.png" width="1000" height="1000" position="500 0 0" rotation="0 -90 0"></a-image>
-    <a-image src="skys/01_UP.png" width="1000" height="1000" position="0 500 0" rotation="270 0 0"></a-image>
-    <a-image src="skys/01_DN.png" width="1000" height="1000" position="0 -500 0" rotation="-90 0 0"></a-image>
-
-    <script>
-
-      const cameraRigElement = document.getElementById('cameraRig');
-      cameraRigElement.setAttribute('position', `${map.startPosition.x} ${map.startPosition.y || 1.5} ${map.startPosition.z * -1}`)
-      cameraRigElement.setAttribute('rotation', `0 ${map.startPosition.angle} 0`)
-
-      const addFloorsAndCeilings = () => {
-        const { polygons } = map;
-        // .filter(d => d.sectorId === 28);
-
-        for (let sectorIndex = 0; sectorIndex < polygons.length; sectorIndex += 1) {
-          const { floor, ceiling, floorHeight, ceilingHeight, polygon, isSky } = polygons[sectorIndex];
-          const vertices = polygon.map(polygon => `${polygon[0]} ${polygon[1]}`).join(', ');
-
-          const floorPolygon = document.createElement('a-entity');
-          floorPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${floorHeight}; face: floor;`);
-          // floorPolygon.setAttribute('material', `color: #fff; side: front;`);
-          floorPolygon.setAttribute('material', `shader: flat; src: assets/${floor}.png; side: front; repeat: 0.325 0.325;`);
-          // floorPolygon.setAttribute('wireframe', true);
-          floorPolygon.setAttribute('class', `floor`);
-          document.querySelector('a-scene').appendChild(floorPolygon);
-
-          if (!isSky) {
-            const ceilingPolygon = document.createElement('a-entity');
-            ceilingPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${ceilingHeight}; face: ceiling;`);
-            ceilingPolygon.setAttribute('material', `shader: flat; src: assets/${ceiling}.png; side: front; repeat: 0.325 0.325;`);
-            // ceilingPolygon.setAttribute('wireframe', true);
-            ceilingPolygon.setAttribute('class', `ceiling`);
-            document.querySelector('a-scene').appendChild(ceilingPolygon);
-          }
-        }
-      }
-      addFloorsAndCeilings();
-
-      const addWalls = () => {
-        for (let planeIndex = 0; planeIndex < map.planes.length; planeIndex += 1) {
-          const { width, x, y, z, height, rotation, src } = map.planes[planeIndex];
-
-          const sizeFactorX = 30.75;
-          const sizeFactorY = 31;
-          const { width: imageWidth, height: imageHeight } = map.assetSizes[src];
-          const xRepeat = (width / imageWidth) * sizeFactorX;
-          const yRepeat = (height / imageHeight) * sizeFactorY;
-
-          if (height > 0.0001) {
-            const wallPlane = document.createElement('a-plane');
-            wallPlane.setAttribute('position', `${x} ${y} ${z * -1}`);
-            wallPlane.setAttribute('rotation', `0 ${rotation * (180 / Math.PI)} 0`);
-            wallPlane.setAttribute('width', width);
-            wallPlane.setAttribute('height', height);
-            wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${xRepeat} ${yRepeat}; alphaTest: 0.9;`);
-            wallPlane.setAttribute('class', `wall`);
-            document.querySelector('a-scene').appendChild(wallPlane);
-          }
-        }
-      }
-      addWalls();
-      
-      const addSprites = () => {
-        for (let spriteIndex = 0; spriteIndex < map.sprites.length; spriteIndex += 1) {
-          const { x, y, z, src, size } = map.sprites[spriteIndex];
-
-          const sprite = document.createElement('a-entity');
-          sprite.setAttribute('position', `${x} ${y || 0} ${z * -1}`);
-          sprite.setAttribute('sprite', `assets: ${src.join(':')};`);
-          sprite.setAttribute('class', `sprite`);
-          document.querySelector('a-scene').appendChild(sprite);
-        }
-      }
-      addSprites();
-
-    </script>
-
-
-
+    <a-sky color="#000"></a-sky>
   </a-scene>
+  <script>
+    const skyBoxDefinition = [
+      ['FR', '0 0 -500', '0 0 0'],
+      ['BK', '0 0 500', '0 180 0'],
+      ['RT', '-500 0 0', '0 90 0'],
+      ['LF', '500 0 0', '0 -90 0'],
+      ['UP', '0 500 0', '270 0 0'],
+      ['DN', '0 -500 0', '-90 0 0'],
+    ]
+    skyBoxDefinition.forEach(([imageSuffix, position, rotation]) => {
+        const skyImage = document.createElement('a-image');
+        skyImage.setAttribute('position', position);
+        skyImage.setAttribute('rotation', rotation);
+        skyImage.setAttribute('width', 1000);
+        skyImage.setAttribute('height', 1000);
+        skyImage.setAttribute('class', `sky`);
+        skyImage.setAttribute('src', `skys/0${map.skyNumber}_${imageSuffix}.png`);
+        document.querySelector('a-scene').appendChild(skyImage);
+    });
+
+    const cameraRigElement = document.getElementById('cameraRig');
+    cameraRigElement.setAttribute('position', `${map.startPosition.x} ${map.startPosition.y || 1.5} ${map.startPosition.z * -1}`)
+    cameraRigElement.setAttribute('rotation', `0 ${map.startPosition.angle} 0`)
+
+    const addFloorsAndCeilings = () => {
+      const { polygons } = map;
+      // .filter(d => d.sectorId === 28);
+
+      for (let sectorIndex = 0; sectorIndex < polygons.length; sectorIndex += 1) {
+        const { floor, ceiling, floorHeight, ceilingHeight, polygon, isSky } = polygons[sectorIndex];
+        const vertices = polygon.map(polygon => `${polygon[0]} ${polygon[1]}`).join(', ');
+
+        const floorPolygon = document.createElement('a-entity');
+        floorPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${floorHeight}; face: floor;`);
+        // floorPolygon.setAttribute('material', `color: #fff; side: front;`);
+        floorPolygon.setAttribute('material', `shader: flat; src: assets/${floor}.png; side: front; repeat: 0.325 0.325;`);
+        // floorPolygon.setAttribute('wireframe', true);
+        floorPolygon.setAttribute('class', `floor`);
+        document.querySelector('a-scene').appendChild(floorPolygon);
+
+        if (!isSky) {
+          const ceilingPolygon = document.createElement('a-entity');
+          ceilingPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${ceilingHeight}; face: ceiling;`);
+          ceilingPolygon.setAttribute('material', `shader: flat; src: assets/${ceiling}.png; side: front; repeat: 0.325 0.325;`);
+          // ceilingPolygon.setAttribute('wireframe', true);
+          ceilingPolygon.setAttribute('class', `ceiling`);
+          document.querySelector('a-scene').appendChild(ceilingPolygon);
+        }
+      }
+    }
+    addFloorsAndCeilings();
+
+    const addWalls = () => {
+      for (let planeIndex = 0; planeIndex < map.planes.length; planeIndex += 1) {
+        const { width, x, y, z, height, rotation, src } = map.planes[planeIndex];
+
+        const sizeFactorX = 30.75;
+        const sizeFactorY = 31;
+        const { width: imageWidth, height: imageHeight } = map.assetSizes[src];
+        const xRepeat = (width / imageWidth) * sizeFactorX;
+        const yRepeat = (height / imageHeight) * sizeFactorY;
+
+        if (height > 0.0001) {
+          const wallPlane = document.createElement('a-plane');
+          wallPlane.setAttribute('position', `${x} ${y} ${z * -1}`);
+          wallPlane.setAttribute('rotation', `0 ${rotation * (180 / Math.PI)} 0`);
+          wallPlane.setAttribute('width', width);
+          wallPlane.setAttribute('height', height);
+          wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${xRepeat} ${yRepeat}; alphaTest: 0.9;`);
+          wallPlane.setAttribute('class', `wall`);
+          document.querySelector('a-scene').appendChild(wallPlane);
+        }
+      }
+    }
+    addWalls();
+    
+    const addSprites = () => {
+      for (let spriteIndex = 0; spriteIndex < map.sprites.length; spriteIndex += 1) {
+        const { x, y, z, src, size } = map.sprites[spriteIndex];
+
+        const sprite = document.createElement('a-entity');
+        sprite.setAttribute('position', `${x} ${y} ${z * -1}`);
+        sprite.setAttribute('sprite', `assets: ${src.join(':')};`);
+        sprite.setAttribute('class', `sprite`);
+        document.querySelector('a-scene').appendChild(sprite);
+      }
+    }
+    addSprites();
+
+  </script>
 </body>
 
 </html>

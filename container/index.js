@@ -170,7 +170,6 @@ const main = async () => {
 
 
     const getSectorPolygonForSectorIndex = (index) => {
-      console.log(`Starting ${index}`);
       const allSectorLinedefs = sidedefs
         .map((sidedef, index) => ({ ...sidedef, index }))
         .filter(sidedef => sidedef.sector === index)

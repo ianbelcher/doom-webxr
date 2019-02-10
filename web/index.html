@@ -142,7 +142,6 @@
     
     const updateSpriteAngles = ({ x: cx, z: cz }) => {
       sprites && sprites.forEach((sprite, index) => {
-          console.log(index)
           const { x: sx, z: sz } = sprite.getAttribute('position');
           const angle = Math.atan2( cx - sx, cz - sz );
           // const angle = Math.atan2( (cx + map.startPosition.x) - sx, (cz - map.startPosition.z) - sz );
@@ -207,13 +206,14 @@
 
         const { width, height } = map.assetSizes[src[0].replace('.png', '')];
 
-        const sprite = document.createElement('a-plane');
+        const sprite = document.createElement('a-image');
         sprite.setAttribute('id', `sprite-${spriteIndex}`);
         sprite.setAttribute('position', `${x} ${y} ${z * -1}`);
         sprite.setAttribute('rotation', `0 0 0`);
         sprite.setAttribute('width', SIZE_FACTOR * width);
         sprite.setAttribute('height', SIZE_FACTOR * height);
-        sprite.setAttribute('material', `src: assets/${src[0].replace('.png', '')}.png; side: both; alphaTest: 0.99;`);
+        sprite.setAttribute('src', `assets/${src[0].replace('.png', '')}.png`);
+        // sprite.setAttribute('material', `src: assets/${src[0].replace('.png', '')}.png; side: both; alphaTest: 0.99;`);
         sprite.setAttribute('class', `sprite`);
         document.querySelector('a-scene').appendChild(sprite);
         sprites.push(sprite);

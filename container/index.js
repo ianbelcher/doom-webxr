@@ -14,470 +14,477 @@ const main = async () => {
     const wad = readWad(await readFile('doom.wad'));
     const doomObjectModel = createObjectModel(wad);
     const { levels, /* textures, patches etc */ } = doomObjectModel;
-    const { vertexes, linedefs, sidedefs, sectors, things } = levels.find(level => level.name === 'E1M1');
 
-    const verticesRanges = vertexes.reduce(
-      (c, v) => ({
-        xMin: Math.min(c.xMin, v.x),
-        yMin: Math.min(c.yMin, v.y),
-        xMax: Math.max(c.xMax, v.x),
-        yMax: Math.max(c.yMax, v.y),
-      }),
-      { xMin: Infinity, yMin: Infinity, xMax: -Infinity, yMax: -Infinity },
-    )
-    const centerOfMass = {
-      x: (verticesRanges.xMax + verticesRanges.xMin) / 2,
-      y: 0,
-      z: (verticesRanges.yMax + verticesRanges.yMin) / 2,
-      none: 0,
-    };
+    levels.forEach(async level => {
+      const { vertexes, linedefs, sidedefs, sectors, things, name } = level;
 
-    const axisFunction = {
-      x: v => v,
-      y: v => v,
-      z: v => v,
-      none: v => v,
-    }
+      const verticesRanges = vertexes.reduce(
+        (c, v) => ({
+          xMin: Math.min(c.xMin, v.x),
+          yMin: Math.min(c.yMin, v.y),
+          xMax: Math.max(c.xMax, v.x),
+          yMax: Math.max(c.yMax, v.y),
+        }),
+        { xMin: Infinity, yMin: Infinity, xMax: -Infinity, yMax: -Infinity },
+      )
+      const centerOfMass = {
+        x: (verticesRanges.xMax + verticesRanges.xMin) / 2,
+        y: 0,
+        z: (verticesRanges.yMax + verticesRanges.yMin) / 2,
+        none: 0,
+      };
 
-    const scale = 0.0625; // The factor we use to size the map coordinates etc.
-    const scaled = (number, dimension = 'none') => (scale * axisFunction[dimension](number - centerOfMass[dimension]));
-    // const scaled = (number, dimension = 'none') => number;
-
-    const isSky = (sector) =>
-      ['F_SKY1', 'SKY1', 'SKY2', 'SKY3', 'SKY4'].indexOf(sector.ceiling) !== -1;
-
-    // -- Sidedefs look like the following
-    // { x: 0,
-    //   y: 0,
-    //   upper: 'COMPTALL',
-    //   lower: 'COMPSPAN',
-    //   middle: '-',
-    //   sector: 15 }
-
-    // -- Linedefs look like the following
-    // { startVertex: 309,
-    //   endVertex: 294,
-    //   flags:
-    //    { impassable: false,
-    //      blockMonster: false,
-    //      doubleSided: true,
-    //      upperUnpegged: true,
-    //      lowerUnpegged: false,
-    //      secret: false,
-    //      blockSound: false,
-    //      hidden: false,
-    //      shown: false },
-    //   specialType: 0,
-    //   sectorTag: 0,
-    //   rightSidedef: 664,
-    //   leftSidedef: 665 }
-
-    // -- Sectors look like the following
-    // { floorHeight: 104,
-    //   ceilingHeight: 184,
-    //   floor: 'FLOOR4_8',
-    //   ceiling: 'FLOOR6_2',
-    //   light: 128,
-    //   type: 9,
-    //   tag: 2 }
-
-    let skyNumber = 1;
-    const planes = linedefs.reduce((planes, lineDef) => {
-      // Need width, height, x, y, z and rotation for each plane
-      const { leftSidedef: leftSideDefIndex, rightSidedef: rightSideDefIndex, startVertex, endVertex } = lineDef;
-      const startPoint = vertexes[startVertex];
-      const endPoint = vertexes[endVertex];
-      const leftSideDef = leftSideDefIndex ? sidedefs[leftSideDefIndex] : false;
-      const rightSideDef = rightSideDefIndex ? sidedefs[rightSideDefIndex] : false;
-      const leftSideSector = leftSideDef ? sectors[leftSideDef.sector] : false;
-      const rightSideSector = rightSideDef ? sectors[rightSideDef.sector] : false;
-      const rise = endPoint.y - startPoint.y; // y movement
-      const run = endPoint.x - startPoint.x; // x movement
-      const rightSideRotation = Math.atan2(rise, run); // https://math.stackexchange.com/a/2587852
-      const leftSideRotation = Math.atan2(-1 * rise, -1 * run);; // The inverse angle of the rightSideRotation
-      const plane = {
-        width: scaled(Math.sqrt(Math.pow(rise, 2) + Math.pow(run, 2))), // Distance / pythagoras
-        x: scaled((startPoint.x + endPoint.x) / 2, 'x'), // Middle
-        z: scaled((startPoint.y + endPoint.y) / 2, 'z'), // Middle
+      const axisFunction = {
+        x: v => v,
+        y: v => v,
+        z: v => v,
+        none: v => v,
       }
 
-      if (isSky(leftSideSector)) {
-        skyNumber = leftSideSector.ceiling.replace('F_SKY', '').replace('SKY', '');
-      }
-      if (isSky(rightSideSector)) {
-        skyNumber = rightSideSector.ceiling.replace('F_SKY', '').replace('SKY', '');
-      }
+      const scale = 0.0625; // The factor we use to size the map coordinates etc.
+      const scaled = (number, dimension = 'none') => (scale * axisFunction[dimension](number - centerOfMass[dimension]));
+      // const scaled = (number, dimension = 'none') => number;
 
-      if (leftSideDef && leftSideDef.middle !== '-') {
-        planes.push({
-          ...plane,
-          y: scaled((leftSideSector.ceilingHeight + leftSideSector.floorHeight) / 2, 'y'),
-          height: scaled(leftSideSector.ceilingHeight - leftSideSector.floorHeight, 'y'),
-          rotation: leftSideRotation,
-          src: leftSideDef.middle,
-        });
-      }
-      if (leftSideDef && leftSideDef.upper !== '-' && (rightSideSector ? !isSky(rightSideSector) : true)) {
-        planes.push({
-          ...plane,
-          y: scaled((leftSideSector.ceilingHeight + rightSideSector.ceilingHeight) / 2, 'y'),
-          height: scaled(leftSideSector.ceilingHeight - rightSideSector.ceilingHeight, 'y'),
-          rotation: leftSideRotation,
-          src: leftSideDef.upper,
-        });
-      }
-      if (leftSideDef && leftSideDef.lower !== '-') {
-        planes.push({
-          ...plane,
-          y: scaled((rightSideSector.floorHeight + leftSideSector.floorHeight) / 2, 'y'),
-          height: scaled(rightSideSector.floorHeight - leftSideSector.floorHeight, 'y'),
-          rotation: leftSideRotation,
-          src: leftSideDef.lower,
-        });
-      }
+      const isSky = (sector) =>
+        ['F_SKY1', 'SKY1', 'SKY2', 'SKY3', 'SKY4'].indexOf(sector.ceiling) !== -1;
 
-      if (rightSideDef && rightSideDef.middle !== '-') {
-        planes.push({
-          ...plane,
-          y: scaled((rightSideSector.ceilingHeight + rightSideSector.floorHeight) / 2, 'y'),
-          height: scaled(rightSideSector.ceilingHeight - rightSideSector.floorHeight, 'y'),
-          rotation: rightSideRotation,
-          src: rightSideDef.middle,
-        });
-      }
-      if (rightSideDef && rightSideDef.upper !== '-' && (leftSideSector ? !isSky(leftSideSector) : true)) {
-        planes.push({
-          ...plane,
-          y: scaled((rightSideSector.ceilingHeight + leftSideSector.ceilingHeight) / 2, 'y'),
-          height: scaled(rightSideSector.ceilingHeight - leftSideSector.ceilingHeight, 'y'),
-          rotation: rightSideRotation,
-          src: rightSideDef.upper,
-        });
-      }
-      if (rightSideDef && rightSideDef.lower !== '-') {
-        planes.push({
-          ...plane,
-          y: scaled((leftSideSector.floorHeight + rightSideSector.floorHeight) / 2, 'y'),
-          height: scaled(leftSideSector.floorHeight - rightSideSector.floorHeight, 'y'),
-          rotation: rightSideRotation,
-          src: rightSideDef.lower,
-        });
-      }
+      // -- Sidedefs look like the following
+      // { x: 0,
+      //   y: 0,
+      //   upper: 'COMPTALL',
+      //   lower: 'COMPSPAN',
+      //   middle: '-',
+      //   sector: 15 }
 
-      return planes;
-    }, [])
-      .filter(i => i.height > 0.0001);
+      // -- Linedefs look like the following
+      // { startVertex: 309,
+      //   endVertex: 294,
+      //   flags:
+      //    { impassable: false,
+      //      blockMonster: false,
+      //      doubleSided: true,
+      //      upperUnpegged: true,
+      //      lowerUnpegged: false,
+      //      secret: false,
+      //      blockSound: false,
+      //      hidden: false,
+      //      shown: false },
+      //   specialType: 0,
+      //   sectorTag: 0,
+      //   rightSidedef: 664,
+      //   leftSidedef: 665 }
+
+      // -- Sectors look like the following
+      // { floorHeight: 104,
+      //   ceilingHeight: 184,
+      //   floor: 'FLOOR4_8',
+      //   ceiling: 'FLOOR6_2',
+      //   light: 128,
+      //   type: 9,
+      //   tag: 2 }
+
+      let skyNumber = 1;
+      const planes = linedefs.reduce((planes, lineDef) => {
+        // Need width, height, x, y, z and rotation for each plane
+        const { leftSidedef: leftSideDefIndex, rightSidedef: rightSideDefIndex, startVertex, endVertex } = lineDef;
+        const startPoint = vertexes[startVertex];
+        const endPoint = vertexes[endVertex];
+        const leftSideDef = leftSideDefIndex ? sidedefs[leftSideDefIndex] : false;
+        const rightSideDef = rightSideDefIndex ? sidedefs[rightSideDefIndex] : false;
+        const leftSideSector = leftSideDef ? sectors[leftSideDef.sector] : false;
+        const rightSideSector = rightSideDef ? sectors[rightSideDef.sector] : false;
+        const rise = endPoint.y - startPoint.y; // y movement
+        const run = endPoint.x - startPoint.x; // x movement
+        const rightSideRotation = Math.atan2(rise, run); // https://math.stackexchange.com/a/2587852
+        const leftSideRotation = Math.atan2(-1 * rise, -1 * run);; // The inverse angle of the rightSideRotation
+        const plane = {
+          width: scaled(Math.sqrt(Math.pow(rise, 2) + Math.pow(run, 2))), // Distance / pythagoras
+          x: scaled((startPoint.x + endPoint.x) / 2, 'x'), // Middle
+          z: scaled((startPoint.y + endPoint.y) / 2, 'z'), // Middle
+        }
+
+        if (isSky(leftSideSector)) {
+          skyNumber = leftSideSector.ceiling.replace('F_SKY', '').replace('SKY', '');
+        }
+        if (isSky(rightSideSector)) {
+          skyNumber = rightSideSector.ceiling.replace('F_SKY', '').replace('SKY', '');
+        }
+
+        if (leftSideDef && leftSideDef.middle !== '-') {
+          planes.push({
+            ...plane,
+            y: scaled((leftSideSector.ceilingHeight + leftSideSector.floorHeight) / 2, 'y'),
+            height: scaled(leftSideSector.ceilingHeight - leftSideSector.floorHeight, 'y'),
+            rotation: leftSideRotation,
+            src: leftSideDef.middle.toUpperCase(),
+          });
+        }
+        if (leftSideDef && leftSideDef.upper !== '-' && (rightSideSector ? !isSky(rightSideSector) : true)) {
+          planes.push({
+            ...plane,
+            y: scaled((leftSideSector.ceilingHeight + rightSideSector.ceilingHeight) / 2, 'y'),
+            height: scaled(leftSideSector.ceilingHeight - rightSideSector.ceilingHeight, 'y'),
+            rotation: leftSideRotation,
+            src: leftSideDef.upper.toUpperCase(),
+          });
+        }
+        if (leftSideDef && leftSideDef.lower !== '-') {
+          planes.push({
+            ...plane,
+            y: scaled((rightSideSector.floorHeight + leftSideSector.floorHeight) / 2, 'y'),
+            height: scaled(rightSideSector.floorHeight - leftSideSector.floorHeight, 'y'),
+            rotation: leftSideRotation,
+            src: leftSideDef.lower.toUpperCase(),
+          });
+        }
+
+        if (rightSideDef && rightSideDef.middle !== '-') {
+          planes.push({
+            ...plane,
+            y: scaled((rightSideSector.ceilingHeight + rightSideSector.floorHeight) / 2, 'y'),
+            height: scaled(rightSideSector.ceilingHeight - rightSideSector.floorHeight, 'y'),
+            rotation: rightSideRotation,
+            src: rightSideDef.middle.toUpperCase(),
+          });
+        }
+        if (rightSideDef && rightSideDef.upper !== '-' && (leftSideSector ? !isSky(leftSideSector) : true)) {
+          planes.push({
+            ...plane,
+            y: scaled((rightSideSector.ceilingHeight + leftSideSector.ceilingHeight) / 2, 'y'),
+            height: scaled(rightSideSector.ceilingHeight - leftSideSector.ceilingHeight, 'y'),
+            rotation: rightSideRotation,
+            src: rightSideDef.upper.toUpperCase(),
+          });
+        }
+        if (rightSideDef && rightSideDef.lower !== '-') {
+          planes.push({
+            ...plane,
+            y: scaled((leftSideSector.floorHeight + rightSideSector.floorHeight) / 2, 'y'),
+            height: scaled(leftSideSector.floorHeight - rightSideSector.floorHeight, 'y'),
+            rotation: rightSideRotation,
+            src: rightSideDef.lower.toUpperCase(),
+          });
+        }
+
+        return planes;
+      }, [])
+        .filter(i => i.height > 0.0001);
 
 
-    const getSectorPolygonForSectorIndex = (index) => {
-      const allSectorLinedefs = sidedefs
-        .map((sidedef, index) => ({ ...sidedef, index }))
-        .filter(sidedef => sidedef.sector === index)
-        .reduce((accumulator, sidedef) => {
-          const linedefsForThisSidedef = linedefs
-            .filter(linedef => linedef.rightSidedef === sidedef.index || linedef.leftSidedef === sidedef.index)
-            .map(linedef => {
-              const otherSide = linedef.rightSidedef === sidedef.index ? linedef.leftSidedef : linedef.rightSidedef
-              return {
-                ...sidedef,
-                start: vertexes[linedef.startVertex],
-                end: vertexes[linedef.endVertex],
-                otherSector: sidedefs[otherSide] ? sidedefs[otherSide].sector : undefined,
-              };
-            });
+      const getSectorPolygonForSectorIndex = (index) => {
+        const allSectorLinedefs = sidedefs
+          .map((sidedef, index) => ({ ...sidedef, index }))
+          .filter(sidedef => sidedef.sector === index)
+          .reduce((accumulator, sidedef) => {
+            const linedefsForThisSidedef = linedefs
+              .filter(linedef => linedef.rightSidedef === sidedef.index || linedef.leftSidedef === sidedef.index)
+              .map(linedef => {
+                const otherSide = linedef.rightSidedef === sidedef.index ? linedef.leftSidedef : linedef.rightSidedef
+                return {
+                  ...sidedef,
+                  start: vertexes[linedef.startVertex],
+                  end: vertexes[linedef.endVertex],
+                  otherSector: sidedefs[otherSide] ? sidedefs[otherSide].sector : undefined,
+                };
+              });
 
-          return [
-            ...accumulator,
-            ...linedefsForThisSidedef,
-          ];
-        }, [])
-        .filter(linedef => linedef.otherSector !== index)
-        ;
+            return [
+              ...accumulator,
+              ...linedefsForThisSidedef,
+            ];
+          }, [])
+          .filter(linedef => linedef.otherSector !== index)
+          ;
 
-      const polygonBuckets = [[]];
-      while (allSectorLinedefs.length) {
-        polygonBucketIndex = polygonBuckets.length - 1;
-        currentBucket = polygonBuckets[polygonBucketIndex];
-        if (!currentBucket.length) {
-          // If the current bucket is empty, add the first value as a start (this value hasn't fit in a previous bucket).
-          currentBucket.push(allSectorLinedefs.splice(0, 1)[0]);
-        } else {
-          // Otherwise, find a value in the remaining list that will fit in this bucket.
-          const linedefForBucket = allSectorLinedefs.find(
-            ({ start: { x: xs1, y: ys1 }, end: { x: xe1, y: ye1 } }) =>
-              currentBucket.find(
-                ({ start: { x: xs2, y: ys2 }, end: { x: xe2, y: ye2 } }) =>
-                  xs1 === xs2 && ys1 === ys2 || // start === start
-                  xe1 === xe2 && ye1 === ye2 || // end === end
-                  xs1 === xe2 && ys1 === ye2 || // start === end
-                  xe1 === xs2 && ye1 === ys2    // end == start
-              )
-          );
-          if (linedefForBucket) {
-            // Remove the current linedefForBucket from the list and add it to the current bucket
-            currentBucket.push(allSectorLinedefs.splice(allSectorLinedefs.indexOf(linedefForBucket), 1)[0]);
+        const polygonBuckets = [[]];
+        while (allSectorLinedefs.length) {
+          polygonBucketIndex = polygonBuckets.length - 1;
+          currentBucket = polygonBuckets[polygonBucketIndex];
+          if (!currentBucket.length) {
+            // If the current bucket is empty, add the first value as a start (this value hasn't fit in a previous bucket).
+            currentBucket.push(allSectorLinedefs.splice(0, 1)[0]);
           } else {
-            // Start a new bucket, we don't have any other values which fit in this bucket.
-            polygonBuckets.push([]);
+            // Otherwise, find a value in the remaining list that will fit in this bucket.
+            const linedefForBucket = allSectorLinedefs.find(
+              ({ start: { x: xs1, y: ys1 }, end: { x: xe1, y: ye1 } }) =>
+                currentBucket.find(
+                  ({ start: { x: xs2, y: ys2 }, end: { x: xe2, y: ye2 } }) =>
+                    xs1 === xs2 && ys1 === ys2 || // start === start
+                    xe1 === xe2 && ye1 === ye2 || // end === end
+                    xs1 === xe2 && ys1 === ye2 || // start === end
+                    xe1 === xs2 && ye1 === ys2    // end == start
+                )
+            );
+            if (linedefForBucket) {
+              // Remove the current linedefForBucket from the list and add it to the current bucket
+              currentBucket.push(allSectorLinedefs.splice(allSectorLinedefs.indexOf(linedefForBucket), 1)[0]);
+            } else {
+              // Start a new bucket, we don't have any other values which fit in this bucket.
+              polygonBuckets.push([]);
+            }
           }
         }
-      }
 
-      const polygons = polygonBuckets.map(sides => {
-        // Populate the start of the polygon and the next coordinate that we're looking for
-        const polygon = [sides[0].start];
-        let nextCoordinate = sides[0].end;
-        sides.splice(0, 1);
-        while (sides.length) {
-          // Iterate through the sides and connect them all up together.
-          polygon.push(nextCoordinate);
-          const nextSidedefStart = sides.find(sd => sd.start.x === nextCoordinate.x && sd.start.y === nextCoordinate.y);
-          const nextSidedefEnd = sides.find(sd => sd.end.x === nextCoordinate.x && sd.end.y === nextCoordinate.y);
-          if (nextSidedefStart) {
-            // There is a side that starts with the ending coordinate of the last side we observed. Use it as the next one.
-            sides.splice(sides.indexOf(nextSidedefStart), 1);
-            nextCoordinate = nextSidedefStart.end;
-          } else if (nextSidedefEnd) {
-            // There is a side that ends with the ending coordinate of the last side we observed. Use it as the next one.
-            sides.splice(sides.indexOf(nextSidedefEnd), 1);
-            nextCoordinate = nextSidedefEnd.start;
-          } else {
-            // Looks like we have a figure 8 polygon where the polygon is squeezed down to a width of 0 through a shared vertex
-            // See E4M9#S138 as an example. In this case for now, just ignore the remaining part of the sector.
-            console.log(`Incomplete polygon... Leaving as we have ${sides.length} sides left.`);
-            console.log(`Sides: ${JSON.stringify(sides)}`);
-            console.log(`polygon: ${JSON.stringify(polygon)}`);
-            break;
+        const polygons = polygonBuckets.map(sides => {
+          // Populate the start of the polygon and the next coordinate that we're looking for
+          const polygon = [sides[0].start];
+          let nextCoordinate = sides[0].end;
+          sides.splice(0, 1);
+          while (sides.length) {
+            // Iterate through the sides and connect them all up together.
+            polygon.push(nextCoordinate);
+            const nextSidedefStart = sides.find(sd => sd.start.x === nextCoordinate.x && sd.start.y === nextCoordinate.y);
+            const nextSidedefEnd = sides.find(sd => sd.end.x === nextCoordinate.x && sd.end.y === nextCoordinate.y);
+            if (nextSidedefStart) {
+              // There is a side that starts with the ending coordinate of the last side we observed. Use it as the next one.
+              sides.splice(sides.indexOf(nextSidedefStart), 1);
+              nextCoordinate = nextSidedefStart.end;
+            } else if (nextSidedefEnd) {
+              // There is a side that ends with the ending coordinate of the last side we observed. Use it as the next one.
+              sides.splice(sides.indexOf(nextSidedefEnd), 1);
+              nextCoordinate = nextSidedefEnd.start;
+            } else {
+              // Looks like we have a figure 8 polygon where the polygon is squeezed down to a width of 0 through a shared vertex
+              // See E4M9#S138 as an example. In this case for now, just ignore the remaining part of the sector.
+              console.log(`Incomplete polygon... Leaving as we have ${sides.length} sides left.`);
+              console.log(`Sides: ${JSON.stringify(sides)}`);
+              console.log(`polygon: ${JSON.stringify(polygon)}`);
+              break;
+            }
           }
+          return polygon;
+        })
+
+        let polygon;
+        if (polygons.length === 1) {
+          polygon = polygons[0]
+        } else {
+          // We've managed to create more than one polygon for this sector, find out which one is the encompassing one.
+          polygon = polygons.slice(1).reduce((largest, current) => {
+            const nonExclusivePoint = current.find(({x, y}) => !largest.find(vertex => vertex.x === x && vertex.y === y));
+            if (pointIsInPolygon(nonExclusivePoint[0], nonExclusivePoint[1], largest)) {
+              return current;
+            }
+            return largest;
+          }, polygons.slice(0, 1)[0]);
+        }
+        
+
+        // Ensure all our polygons turn in the same direction.
+        // @see https://stackoverflow.com/a/1165943/981598
+        let anglesSum = 0;
+        for (let edgeIndex = 0; edgeIndex < polygon.length; edgeIndex += 1) {
+          // Last entry references the first
+          const edgeIndexNext = edgeIndex !== polygon.length - 1 ? edgeIndex + 1 : 0;
+          anglesSum += (polygon[edgeIndexNext].x - polygon[edgeIndex].x) * (polygon[edgeIndexNext].y + polygon[edgeIndex].y);
+        }
+        if (anglesSum < 0) {
+          polygon.reverse();
         }
         return polygon;
-      })
-
-      let polygon;
-      if (polygons.length === 1) {
-        polygon = polygons[0]
-      } else {
-        // We've managed to create more than one polygon for this sector, find out which one is the encompassing one.
-        polygon = polygons.slice(1).reduce((largest, current) => {
-          const nonExclusivePoint = current.find(({x, y}) => !largest.find(vertex => vertex.x === x && vertex.y === y));
-          if (pointIsInPolygon(nonExclusivePoint[0], nonExclusivePoint[1], largest)) {
-            return current;
-          }
-          return largest;
-        }, polygons.slice(0, 1)[0]);
       }
-      
 
-      // Ensure all our polygons turn in the same direction.
-      // @see https://stackoverflow.com/a/1165943/981598
-      let anglesSum = 0;
-      for (let edgeIndex = 0; edgeIndex < polygon.length; edgeIndex += 1) {
-        // Last entry references the first
-        const edgeIndexNext = edgeIndex !== polygon.length - 1 ? edgeIndex + 1 : 0;
-        anglesSum += (polygon[edgeIndexNext].x - polygon[edgeIndex].x) * (polygon[edgeIndexNext].y + polygon[edgeIndex].y);
-      }
-      if (anglesSum < 0) {
-        polygon.reverse();
-      }
-      return polygon;
-    }
+      const pointIsInPolygon = (x, y, polygon) => {
+        // Ray-trace along x axis. Find all points where:
+        // 1) a polygon edge crossed over the x axis at a position xIntersect 
+        // 2) where the start vertex of the edge and the y vertex are equal we need to walk out and find the next vertex that is off that axis and
+        // ensure that one diverges above and the other below.
+        // Count the number of instance the above happens where the intersect has a value less than x. If we have an odd number of 
+        // results, the point is inside the polygon.
+        let intersectingEdges = 0
+        for (let edgeIndex = 0; edgeIndex < polygon.length; edgeIndex += 1) {
+          const nextIndex = (index) => index !== polygon.length - 1 ? index + 1 : 0;
+          const previousIndex = (index) => index ? index - 1 : polygon.length - 1;
+          let edgeIndexNext = nextIndex(edgeIndex);
+          let edgeIndexPrevious = previousIndex(edgeIndex);
 
-    const pointIsInPolygon = (x, y, polygon) => {
-      // Ray-trace along x axis. Find all points where:
-      // 1) a polygon edge crossed over the x axis at a position xIntersect 
-      // 2) where the start vertex of the edge and the y vertex are equal we need to walk out and find the next vertex that is off that axis and
-      // ensure that one diverges above and the other below.
-      // Count the number of instance the above happens where the intersect has a value less than x. If we have an odd number of 
-      // results, the point is inside the polygon.
-      let intersectingEdges = 0
-      for (let edgeIndex = 0; edgeIndex < polygon.length; edgeIndex += 1) {
-        const nextIndex = (index) => index !== polygon.length - 1 ? index + 1 : 0;
-        const previousIndex = (index) => index ? index - 1 : polygon.length - 1;
-        let edgeIndexNext = nextIndex(edgeIndex);
-        let edgeIndexPrevious = previousIndex(edgeIndex);
-
-        if (
-          (polygon[edgeIndex][1] < y && polygon[edgeIndexNext][1] > y)
-          ||
-          (polygon[edgeIndex][1] > y && polygon[edgeIndexNext][1] < y)
-        ) {
-          // We have an intersection of the x axis. Calculate the xIntersect.
-          const totalRise = polygon[edgeIndexNext][1] - polygon[edgeIndex][1];
-          const intersectRise = y - polygon[edgeIndex][1];
-          const totalRun = polygon[edgeIndexNext][0] - polygon[edgeIndex][0];
-          const xIntersect = ((intersectRise / totalRise) * totalRun) + polygon[edgeIndex][0];
-
-          if (xIntersect < x) {
-            intersectingEdges += 1;
-          }
-        }
-
-        if (polygon[edgeIndex][0] < x && polygon[edgeIndex][1] === y && polygon[edgeIndexPrevious][1] !== y) {
-          while (polygon[edgeIndexNext][1] === y) {
-            edgeIndexNext = nextIndex(edgeIndexNext);
-          }
-          while (polygon[edgeIndexPrevious][1] === y) {
-            edgeIndexPrevious = previousIndex(edgeIndexPrevious);
-          }
           if (
-            (polygon[edgeIndexPrevious][1] < y && polygon[edgeIndexNext][1] > y)
+            (polygon[edgeIndex][1] < y && polygon[edgeIndexNext][1] > y)
             ||
-            (polygon[edgeIndexPrevious][1] > y && polygon[edgeIndexNext][1] < y)
+            (polygon[edgeIndex][1] > y && polygon[edgeIndexNext][1] < y)
           ) {
-            // We have a shared point on the y axis. The xIntersect is simply equal to the polygons x 
-            // value which checked was < x above
-            intersectingEdges += 1;
+            // We have an intersection of the x axis. Calculate the xIntersect.
+            const totalRise = polygon[edgeIndexNext][1] - polygon[edgeIndex][1];
+            const intersectRise = y - polygon[edgeIndex][1];
+            const totalRun = polygon[edgeIndexNext][0] - polygon[edgeIndex][0];
+            const xIntersect = ((intersectRise / totalRise) * totalRun) + polygon[edgeIndex][0];
+
+            if (xIntersect < x) {
+              intersectingEdges += 1;
+            }
+          }
+
+          if (polygon[edgeIndex][0] < x && polygon[edgeIndex][1] === y && polygon[edgeIndexPrevious][1] !== y) {
+            while (polygon[edgeIndexNext][1] === y) {
+              edgeIndexNext = nextIndex(edgeIndexNext);
+            }
+            while (polygon[edgeIndexPrevious][1] === y) {
+              edgeIndexPrevious = previousIndex(edgeIndexPrevious);
+            }
+            if (
+              (polygon[edgeIndexPrevious][1] < y && polygon[edgeIndexNext][1] > y)
+              ||
+              (polygon[edgeIndexPrevious][1] > y && polygon[edgeIndexNext][1] < y)
+            ) {
+              // We have a shared point on the y axis. The xIntersect is simply equal to the polygons x 
+              // value which checked was < x above
+              intersectingEdges += 1;
+            }
           }
         }
+
+        return intersectingEdges % 2 > 0;
       }
 
-      return intersectingEdges % 2 > 0;
-    }
+      // This gets pretty complicated. Sectors can fully enclose other sectors (think the pool outside in E1M1).
+      // We need to carve out these sections in the outer sector polygon to avoid having the floor or ceiling covering
+      // the inner sector. It also means that only one sector can exist in any given spot which allows us to determine 
+      // heights of things and other assets in the map.
+      // Algorithm we're using is
+      // Take a vertex from each polygon and ray-trace it against the current. If that vertex point is _inside_ (not a
+      // shared vertex) then we assume it that the current polygon envelopes that polygon. (Doom can't have intersecting
+      // polygon edges)
+      // Find the two closest vertices from the outer and inner polygons.
+      // Added inner polygon points to the outer at that point of the array, returning to the original point.
+      const carveOutOverlappingPolygons = ({ polygon: currentPolygon, bounds: currentBounds, sectorId: currentSectorId }, index, allSectors) => {
+        allSectors.forEach(({ polygon: toCheckPolygon, sectorId: toCheckSectorId }) => {
+          // We take a point from the toCheckPolygon which doesn't share a common vertex with the currentPolygon
+          const result = toCheckPolygon.find(([x, y]) => !currentPolygon.find(vertex => vertex[0] === x && vertex[1] === y));
+          // If polygons are equal or share all the same points ignore them. Either the polygon is external and encompassed by
+          // the other which a concave shape, or this polygon segments the other which can't happen in doom as sectors need to 
+          // be contiguous.
+          if (!result) return;
+          const [x, y] = result;
 
-    // This gets pretty complicated. Sectors can fully enclose other sectors (think the pool outside in E1M1).
-    // We need to carve out these sections in the outer sector polygon to avoid having the floor or ceiling covering
-    // the inner sector. It also means that only one sector can exist in any given spot which allows us to determine 
-    // heights of things and other assets in the map.
-    // Algorithm we're using is
-    // Take a vertex from each polygon and ray-trace it against the current. If that vertex point is _inside_ (not a
-    // shared vertex) then we assume it that the current polygon envelopes that polygon. (Doom can't have intersecting
-    // polygon edges)
-    // Find the two closest vertices from the outer and inner polygons.
-    // Added inner polygon points to the outer at that point of the array, returning to the original point.
-    const carveOutOverlappingPolygons = ({ polygon: currentPolygon, bounds: currentBounds, sectorId: currentSectorId }, index, allSectors) => {
-      allSectors.forEach(({ polygon: toCheckPolygon, sectorId: toCheckSectorId }) => {
-        // We take a point from the toCheckPolygon which doesn't share a common vertex with the currentPolygon
-        const result = toCheckPolygon.find(([x, y]) => !currentPolygon.find(vertex => vertex[0] === x && vertex[1] === y));
-        // If polygons are equal or share all the same points ignore them. Either the polygon is external and encompassed by
-        // the other which a concave shape, or this polygon segments the other which can't happen in doom as sectors need to 
-        // be contiguous.
-        if (!result) return;
-        const [x, y] = result;
+          // Initially check bounds which is computationally much cheaper then the ray-trace if required.
+          if (
+            currentBounds[0][0] <= x && currentBounds[1][0] >= x &&
+            currentBounds[0][1] <= y && currentBounds[1][1] >= y &&
+            pointIsInPolygon(x, y, currentPolygon)
+          ) {
 
-        // Initially check bounds which is computationally much cheaper then the ray-trace if required.
-        if (
-          currentBounds[0][0] <= x && currentBounds[1][0] >= x &&
-          currentBounds[0][1] <= y && currentBounds[1][1] >= y &&
-          pointIsInPolygon(x, y, currentPolygon)
-        ) {
-
-          let closestTwoVertices = {
-            distance: Infinity,
-          }
-          currentPolygon.forEach((currentPolygonVertex) => {
-            toCheckPolygon.forEach((toCheckPolygonVertex) => {
-              // No need to sqrt here... The result doesn't need to actual distance units.
-              const distance = Math.pow(toCheckPolygonVertex[0] - currentPolygonVertex[0], 2) + Math.pow(toCheckPolygonVertex[1] - currentPolygonVertex[1], 2);
-              if (distance < closestTwoVertices.distance) {
-                closestTwoVertices = {
-                  currentPolygonBestVertex: currentPolygonVertex,
-                  toCheckPolygonBestVertex: toCheckPolygonVertex,
-                  distance,
+            let closestTwoVertices = {
+              distance: Infinity,
+            }
+            currentPolygon.forEach((currentPolygonVertex) => {
+              toCheckPolygon.forEach((toCheckPolygonVertex) => {
+                // No need to sqrt here... The result doesn't need to actual distance units.
+                const distance = Math.pow(toCheckPolygonVertex[0] - currentPolygonVertex[0], 2) + Math.pow(toCheckPolygonVertex[1] - currentPolygonVertex[1], 2);
+                if (distance < closestTwoVertices.distance) {
+                  closestTwoVertices = {
+                    currentPolygonBestVertex: currentPolygonVertex,
+                    toCheckPolygonBestVertex: toCheckPolygonVertex,
+                    distance,
+                  }
                 }
-              }
+              });
             });
-          });
 
-          const { currentPolygonBestVertex, toCheckPolygonBestVertex } = closestTwoVertices;
+            const { currentPolygonBestVertex, toCheckPolygonBestVertex } = closestTwoVertices;
 
-          // Add a carved out section to the currentPolygon of the reversed toCheckPolygon. This will result in a non-intersecting
-          // concave polygon that does not include the the toCheckPolygon
-          toCheckPolygonReversed = toCheckPolygon.reverse();
-          currentPolygon = [
-            ...currentPolygon.slice(currentPolygon.indexOf(currentPolygonBestVertex)),
-            ...currentPolygon.slice(0, currentPolygon.indexOf(currentPolygonBestVertex)),
-            currentPolygonBestVertex,
-            toCheckPolygonBestVertex,
-            ...toCheckPolygonReversed.slice(toCheckPolygonReversed.indexOf(toCheckPolygonBestVertex)),
-            ...toCheckPolygonReversed.slice(0, toCheckPolygonReversed.indexOf(toCheckPolygonBestVertex)),
-            toCheckPolygonBestVertex,
-            currentPolygonBestVertex,
-          ];
+            // Add a carved out section to the currentPolygon of the reversed toCheckPolygon. This will result in a non-intersecting
+            // concave polygon that does not include the the toCheckPolygon
+            toCheckPolygonReversed = toCheckPolygon.reverse();
+            currentPolygon = [
+              ...currentPolygon.slice(currentPolygon.indexOf(currentPolygonBestVertex)),
+              ...currentPolygon.slice(0, currentPolygon.indexOf(currentPolygonBestVertex)),
+              currentPolygonBestVertex,
+              toCheckPolygonBestVertex,
+              ...toCheckPolygonReversed.slice(toCheckPolygonReversed.indexOf(toCheckPolygonBestVertex)),
+              ...toCheckPolygonReversed.slice(0, toCheckPolygonReversed.indexOf(toCheckPolygonBestVertex)),
+              toCheckPolygonBestVertex,
+              currentPolygonBestVertex,
+            ];
+          }
+        });
+
+        polygons[index].polygon = currentPolygon;
+      }
+
+      const polygons = sectors.map((sector, index) => {
+
+        const polygon = getSectorPolygonForSectorIndex(index).map(i => [scaled(i.x, 'x'), scaled(i.y, 'z')])
+
+        const bounds = polygon.reduce((accumulator, point) => ([
+          [
+            Math.min(accumulator[0][0], point[0]),
+            Math.min(accumulator[0][1], point[1]),
+          ],
+          [
+            Math.max(accumulator[1][0], point[0]),
+            Math.max(accumulator[1][1], point[1]),
+          ]
+        ]), [[Infinity, Infinity], [-Infinity, -Infinity]]);
+
+        return {
+          ...sector,
+          sectorId: index,
+          isSky: isSky(sector),
+          floorHeight: scaled(sector.floorHeight),
+          ceilingHeight: scaled(sector.ceilingHeight),
+          polygon,
+          bounds,
         }
       });
 
-      polygons[index].polygon = currentPolygon;
-    }
+      polygons.forEach(carveOutOverlappingPolygons);
 
-    const polygons = sectors.map((sector, index) => {
-
-      const polygon = getSectorPolygonForSectorIndex(index).map(i => [scaled(i.x, 'x'), scaled(i.y, 'z')])
-
-      const bounds = polygon.reduce((accumulator, point) => ([
-        [
-          Math.min(accumulator[0][0], point[0]),
-          Math.min(accumulator[0][1], point[1]),
-        ],
-        [
-          Math.max(accumulator[1][0], point[0]),
-          Math.max(accumulator[1][1], point[1]),
-        ]
-      ]), [[Infinity, Infinity], [-Infinity, -Infinity]]);
-
-      return {
-        ...sector,
-        sectorId: index,
-        isSky: isSky(sector),
-        floorHeight: scaled(sector.floorHeight),
-        ceilingHeight: scaled(sector.ceilingHeight),
-        polygon,
-        bounds,
+      const getSectorForPoint = (x, y) => {
+        return polygons.find(sector => (
+          sector.bounds[0][0] <= x && sector.bounds[1][0] >= x &&
+          sector.bounds[0][1] <= y && sector.bounds[1][1] >= y &&
+          pointIsInPolygon(x, y, sector.polygon)
+        ));
       }
-    });
 
-    polygons.forEach(carveOutOverlappingPolygons);
+      let startPosition;
+      const sprites = things.map(({ x, y, type, angle }, index) => {
+        const thingDefinition = thingLookup.find(i => i[0] === type);
+        if (!thingDefinition) return undefined;
+        const [id, /* idHex */, /* version */, size, sprite, sequence] = thingDefinition;
+        if (['none', 'none1', 'none4', 'none6'].indexOf(sprite) !== -1) return undefined;
+        const sector = getSectorForPoint(scaled(x, 'x'), scaled(y, 'z'));
+        if (!sector) {
+          console.log(`No sector found for thing ${JSON.stringify(things[index])}`);
+          return;
+        }
+        if (type === 1) {
+          startPosition = {
+            x: scaled(x, 'x'),
+            y: sector.floorHeight + 1.5,
+            z: scaled(y, 'z'),
+            angle: angle * (Math.PI / 180),
+          };
+          return undefined;
+        }
+        let src;
+        if (sequence === '+') {
+          const regex = new RegExp(`^${sprite}.+1`);
+          src = assetsAvailable.filter(asset => regex.exec(asset));
+        } else {
+          const regex = new RegExp(`^${sprite}[${sequence}]+0`);
+          src = assetsAvailable.filter(asset => regex.exec(asset));
+        }
 
-    const getSectorForPoint = (x, y) => {
-      return polygons.find(sector => (
-        sector.bounds[0][0] <= x && sector.bounds[1][0] >= x &&
-        sector.bounds[0][1] <= y && sector.bounds[1][1] >= y &&
-        pointIsInPolygon(x, y, sector.polygon)
-      ));
-    }
-
-    let startPosition;
-    const sprites = things.map(({ x, y, type, angle }, index) => {
-      const thingDefinition = thingLookup.find(i => i[0] === type);
-      if (!thingDefinition) return undefined;
-      const [id, /* idHex */, /* version */, size, sprite, sequence] = thingDefinition;
-      if (['none', 'none1', 'none4', 'none6'].indexOf(sprite) !== -1) return undefined;
-      const sector = getSectorForPoint(scaled(x, 'x'), scaled(y, 'z'));
-      if (!sector) {
-        console.log(`No sector found for thing ${JSON.stringify(things[index])}`);
-        return;
-      }
-      if (type === 1) {
-        startPosition = {
+        return {
+          id,
+          size,
+          src: src.map(i => i.replace('.png', '')),
           x: scaled(x, 'x'),
-          y: sector.floorHeight + 1.5,
+          y: sector.floorHeight + scaled(assetSizes[src[0].replace('.png', '')].height / 2, 'y'),
           z: scaled(y, 'z'),
           angle: angle * (Math.PI / 180),
-        };
-        return undefined;
-      }
-      let src;
-      if (sequence === '+') {
-        const regex = new RegExp(`^${sprite}.+1`);
-        src = assetsAvailable.filter(asset => regex.exec(asset));
-      } else {
-        const regex = new RegExp(`^${sprite}[${sequence}]+0`);
-        src = assetsAvailable.filter(asset => regex.exec(asset));
-      }
+        }
+      })
+        .filter(i => i);
 
-      return {
-        id,
-        size,
-        src: src.map(i => i.replace('.png', '')),
-        x: scaled(x, 'x'),
-        y: sector.floorHeight + scaled(assetSizes[src[0].replace('.png', '')].height / 2, 'y'),
-        z: scaled(y, 'z'),
-        angle: angle * (Math.PI / 180),
-      }
-    })
-      .filter(i => i);
-
-    await writeFile('/web/data.js', `const map = ${JSON.stringify({ planes, polygons, sprites, startPosition, assetSizes, skyNumber })}`);
-
+      await writeFile(`/web/levels/${name}.js`, 
+      `
+      const map = ${JSON.stringify({ planes, polygons, sprites, startPosition, assetSizes, skyNumber })};
+      run();
+      `
+      );
+    });
   } catch (error) {
     console.error(error);
     process.exit();

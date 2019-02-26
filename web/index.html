@@ -4,94 +4,20 @@
 <head>
   <meta charset="utf-8">
   <title>Doom</title>
-
-  <script src="data.js"></script>
   <script src="https://unpkg.com/aframe@0.8.2/dist/aframe-master.js"></script>
   <script src="https://unpkg.com/aframe-teleport-controls@0.3.1/dist/aframe-teleport-controls.js"></script>
-
-  <script>
-    const SIZE_FACTOR = 0.0625;
-
-    const removeIntroScreen = () => {
-      const introScreen = document.getElementById('introScreen');
-      introScreen.parentElement.removeChild(introScreen);
-    }
-
-    document.addEventListener('keypress', removeIntroScreen);
-
-    AFRAME.registerComponent('sector', {
-      schema: {
-        vertices: {
-          default: ['-10 10', '-10 -10', '10 -10'],
-        },
-        height: { default: 10 },
-        face: { default: 'floor' },
-      },
-
-      init: function () {
-        const { data } = this;
-
-        const pts = [];
-        for (let i = 0; i < data.vertices.length; i++) {
-          const points = data.vertices[i].split(' ').map(x => parseFloat(x));
-          pts.push(new THREE.Vector2(points[0], points[1] * (this.data.face === 'floor' ? -1 : 1)));
-        }
-        const shape = new THREE.Shape(pts);
-
-        const extrudeSettings = {
-          depth: 0,
-          steps: 0,
-          bevelEnabled: false,
-          // bevelEnabled: true, bevelSegments: 8, steps: 8, bevelSize: 0.1, bevelThickness: 0.1 
-        };
-        this.geometry = new THREE.ExtrudeBufferGeometry(shape, extrudeSettings);
-        this.geometry.lookAt(new THREE.Vector3(0, this.data.face === 'ceiling' ? 10000 : -10000, 0));
-        this.mesh = new THREE.Mesh(this.geometry);
-        this.mesh.position.y = this.data.height;
-        this.el.setObject3D('mesh', this.mesh);
-      }
-    });
-
-    AFRAME.registerComponent('sprite', {
-      schema: {
-        assets: { default: '' },
-      },
-
-      init: function () {
-        const { data } = this;
-        const assets = data.assets.split(':');
-        const files = assets.map(i => `assets/${i}.png`);
-
-        this.textureLoader = new THREE.TextureLoader();
-        this.map = this.textureLoader.load(files[0]);
-        this.material = new THREE.SpriteMaterial({
-            map: this.map
-        });
-        this.sprite = new THREE.Sprite(this.material);
-
-        const { width, height } = map.assetSizes[assets[0]];
-        const valueX = SIZE_FACTOR * width;
-        const valueY = SIZE_FACTOR * height;
-
-        this.sprite.scale.set( valueX, valueY, 0 );
-
-        this.el.setObject3D('mesh', this.sprite);
-      }
-    });
-
-    let wasdDisabled = false;
-    AFRAME.registerComponent('listener', {
-      tick: function () {
-        if (!wasdDisabled) {
-          const position = this.el.getAttribute('position');
-          updateSpriteAngles({x: position.x + map.startPosition.x, z: position.z + (map.startPosition.z * -1)});
-        }
-      }
-    });
-
-  </script>
-
+  <script src="app.js"></script>
   <style>
+    @font-face {
+      font-family: 'doom';
+      src: url(doom.ttf) format('truetype');
+    }
+    select {
+      font-family: 'doom';
+      background-color: #f00;
+      font-size: 30px;
+      color: black;
+    }
     p {
       font-family: monospace;
       font-weight: 600;
@@ -107,11 +33,9 @@
       color: white;
     }
   </style>
-
 </head>
 
 <body>
-
   <div id="introScreen" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: center;z-index: 1;">
     <div style="width: 50%; min-width: 200px; background: #f00; border: 5px solid black; padding: 40px; border-radius: 5px;">
       <svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" version="1.1" id="games-rock" viewBox="0 0 1680 869.19995" height="200" width="100%">
@@ -120,15 +44,58 @@
         </g>
       </svg>
       <p>
+        <select id="levelSelect">
+          <option>SELECT LEVEL</option>
+          <option>E1M1</option>
+          <option>E1M2</option>
+          <option>E1M3</option>
+          <option>E1M4</option>
+          <option>E1M5</option>
+          <option>E1M6</option>
+          <option>E1M7</option>
+          <option>E1M8</option>
+          <option>E1M9</option>
+          <option>E2M1</option>
+          <option>E2M2</option>
+          <option>E2M3</option>
+          <option>E2M4</option>
+          <option>E2M5</option>
+          <option>E2M6</option>
+          <option>E2M7</option>
+          <option>E2M8</option>
+          <option>E2M9</option>
+          <option>E3M1</option>
+          <option>E3M2</option>
+          <option>E3M3</option>
+          <option>E3M4</option>
+          <option>E3M5</option>
+          <option>E3M6</option>
+          <option>E3M7</option>
+          <option>E3M8</option>
+          <option>E3M9</option>
+          <option>E4M1</option>
+          <option>E4M2</option>
+          <option>E4M3</option>
+          <option>E4M4</option>
+          <option>E4M5</option>
+          <option>E4M6</option>
+          <option>E4M7</option>
+          <option>E4M8</option>
+          <option>E4M9</option>
+        </select>
+
+        <br /><br />
         <span class="highlight">DOOM</span>, the hellish 3-D game by <span class="id">id</span> Software.
         <br /><br />
-        You can move around using the <span class="highlight">WASD</span> keys and mouse, or for an even better experience, open the site in Firefox and view it with your VR equipment such as <span class="highlight">Vive</span> or <span class="highlight">Rift</span>.
+        Converted to a webpage with <a href="https://threejs.org">three.js</a> and <a href="https://aframe.io/">aframe</a>.
         <br /><br />
-        An experiment with <a href="https://threejs.org">three.js</a> and <a href="https://aframe.io/">aframe</a>.
+        You can move around using the <span class="highlight">WASD</span> keys and mouse, or for an even better experience, open the site in Firefox and view it with <span class="id">VR</span> equipment such as <span class="highlight">Vive</span> or <span class="highlight">Rift</span>.
+        <br /><br />
+        There are still a number of bugs obviously, but its getting there...
+        
       </p>
     </div>
   </div>
-
   <a-scene>
     <a-entity cursor="rayOrigin: mouse"></a-entity>
     <a-entity id="cameraRig" position="0 0 0" rotation="0 0 0">
@@ -143,126 +110,24 @@
       </a-entity>
     </a-entity>
 
-    <!-- <a-entity light="type: directional; color: #FFF; intensity: 0.5" position="2 20 0"></a-entity> -->
     <a-entity light="type: ambient; color: #666"></a-entity>
-
-    <!-- <img id="sky_sphere-texture" src="assets/SKY1.png"> -->
-    <!-- <a-sky color="#EEEEFF" src="#sky_sphere-texture"></a-sky> -->
-    
     <a-sky color="#000"></a-sky>
+
   </a-scene>
-  <script>
-    const skyBoxDefinition = [
-      ['FR', '0 0 -1000', '0 0 0', 4000],
-      ['BK', '0 0 1000', '0 180 0', 4000],
-      ['RT', '-1000 0 0', '0 90 0', 4000],
-      ['LF', '1000 0 0', '0 -90 0', 4000],
-      ['UP', '0 2000 0', '270 0 0', 2000],
-      ['DN', '0 -2000 0', '-90 0 0', 2000],
-    ]
-    skyBoxDefinition.forEach(([imageSuffix, position, rotation, height]) => {
-        const skyImage = document.createElement('a-image');
-        skyImage.setAttribute('position', position);
-        skyImage.setAttribute('rotation', rotation);
-        skyImage.setAttribute('width', 2000);
-        skyImage.setAttribute('height', height);
-        skyImage.setAttribute('class', `sky`);
-        skyImage.setAttribute('src', `skys/0${map.skyNumber}_${imageSuffix}.png`);
-        document.querySelector('a-scene').appendChild(skyImage);
-    });
-
-    const cameraRigElement = document.getElementById('cameraRig');
-    cameraRigElement.setAttribute('position', `${map.startPosition.x} ${map.startPosition.y || 1.5} ${map.startPosition.z * -1}`);
-    cameraRigElement.setAttribute('rotation', `0 ${map.startPosition.angle} 0`);
-    const cameraElement = document.getElementById('head');
-    cameraRigElement.addEventListener('teleported', event => {
-      wasdDisabled = true;
-      updateSpriteAngles(event.detail.newPosition);
-    });
-    
-    const updateSpriteAngles = ({ x: cx, z: cz }) => {
-      sprites && sprites.forEach((sprite, index) => {
-          const { x: sx, z: sz } = sprite.getAttribute('position');
-          const angle = Math.atan2( cx - sx, cz - sz );
-          // const angle = Math.atan2( (cx + map.startPosition.x) - sx, (cz - map.startPosition.z) - sz );
-          sprite.object3D.rotation.y = angle;
-        });
-    }
-
-    const addFloorsAndCeilings = () => {
-      const { polygons } = map;
-      // .filter(d => d.sectorId === 28);
-
-      for (let sectorIndex = 0; sectorIndex < polygons.length; sectorIndex += 1) {
-        const { floor, ceiling, floorHeight, ceilingHeight, polygon, isSky } = polygons[sectorIndex];
-        const vertices = polygon.map(polygon => `${polygon[0]} ${polygon[1]}`).join(', ');
-
-        const floorPolygon = document.createElement('a-entity');
-        floorPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${floorHeight}; face: floor;`);
-        // floorPolygon.setAttribute('material', `color: #fff; side: front;`);
-        floorPolygon.setAttribute('material', `shader: flat; src: assets/${floor}.png; side: front; repeat: 0.325 0.325;`);
-        // floorPolygon.setAttribute('wireframe', true);
-        floorPolygon.setAttribute('class', `floor`);
-        document.querySelector('a-scene').appendChild(floorPolygon);
-
-        if (!isSky) {
-          const ceilingPolygon = document.createElement('a-entity');
-          ceilingPolygon.setAttribute('sector', `vertices: ${vertices}; height: ${ceilingHeight}; face: ceiling;`);
-          ceilingPolygon.setAttribute('material', `shader: flat; src: assets/${ceiling}.png; side: front; repeat: 0.325 0.325;`);
-          // ceilingPolygon.setAttribute('wireframe', true);
-          ceilingPolygon.setAttribute('class', `ceiling`);
-          document.querySelector('a-scene').appendChild(ceilingPolygon);
-        }
-      }
-    }
-    addFloorsAndCeilings();
-
-    const addWalls = () => {
-      for (let planeIndex = 0; planeIndex < map.planes.length; planeIndex += 1) {
-        const { width, x, y, z, height, rotation, src } = map.planes[planeIndex];
-
-        const { width: imageWidth, height: imageHeight } = map.assetSizes[src];
-        const xRepeat = (width / imageWidth) / SIZE_FACTOR;
-        const yRepeat = (height / imageHeight) / SIZE_FACTOR;
-
-        if (height > 0.0001) {
-          const wallPlane = document.createElement('a-plane');
-          wallPlane.setAttribute('position', `${x} ${y} ${z * -1}`);
-          wallPlane.setAttribute('rotation', `0 ${rotation * (180 / Math.PI)} 0`);
-          wallPlane.setAttribute('width', width);
-          wallPlane.setAttribute('height', height);
-          wallPlane.setAttribute('material', `src: assets/${src}.png; side: both; repeat: ${xRepeat} ${yRepeat}; alphaTest: 0.9;`);
-          wallPlane.setAttribute('class', `wall`);
-          document.querySelector('a-scene').appendChild(wallPlane);
-        }
-      }
-    }
-    addWalls();
-    
-    const addSprites = () => {
-      const sprites = [];
-      for (let spriteIndex = 0; spriteIndex < map.sprites.length; spriteIndex += 1) {
-        const { x, y, z, src, size, angle } = map.sprites[spriteIndex];
-
-        const { width, height } = map.assetSizes[src[0].replace('.png', '')];
-
-        const sprite = document.createElement('a-image');
-        sprite.setAttribute('id', `sprite-${spriteIndex}`);
-        sprite.setAttribute('position', `${x} ${y} ${z * -1}`);
-        sprite.setAttribute('rotation', `0 0 0`);
-        sprite.setAttribute('width', SIZE_FACTOR * width);
-        sprite.setAttribute('height', SIZE_FACTOR * height);
-        sprite.setAttribute('src', `assets/${src[0].replace('.png', '')}.png`);
-        // sprite.setAttribute('material', `src: assets/${src[0].replace('.png', '')}.png; side: both; alphaTest: 0.99;`);
-        sprite.setAttribute('class', `sprite`);
-        document.querySelector('a-scene').appendChild(sprite);
-        sprites.push(sprite);
-      }
-      return sprites;
-    }
-    const sprites = addSprites();
-
-  </script>
 </body>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const level = urlParams.get('level') || 'E1M1';
+  const mapData = document.createElement('script');
+  mapData.src = `levels/${level}.js`;
+  document.body.appendChild(mapData);
+
+  const removeIntroScreen = () => {
+    const introScreen = document.getElementById('introScreen');
+    introScreen.parentElement.removeChild(introScreen);
+  }
+
+  document.addEventListener('keypress', removeIntroScreen);
+</script>
 
 </html>

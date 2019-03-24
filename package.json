@@ -14,13 +14,15 @@
     "eslint-plugin-import": "^2.16.0",
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.12.4",
+    "http-server": "^0.11.1",
     "image-size": "^0.7.1"
   },
   "scripts": {
+    "serve": "http-server",
     "build": "npm run build:clean && npm run build:static && npm run build:templates && npm run build:index",
-    "build:clean": "rm -Rf web && mkdir -p web",
-    "build:static": "cp -r src/static/* web",
+    "build:clean": "rm -Rf public && mkdir -p public",
+    "build:static": "cp -r src/static/* public",
     "build:templates": "node src/index.js",
-    "build:index": "cp web/E1M1.html web/index.html"
+    "build:index": "cp public/E1M1.html public/index.html"
   }
 }

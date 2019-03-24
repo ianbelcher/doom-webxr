@@ -19,7 +19,7 @@ const renderFile = promisify(renderFileCb);
 const DIRECTORIES = {
   assets: resolve(__dirname, './static/assets'),
   template: resolve(__dirname, './template'),
-  web: resolve(__dirname, '../web'),
+  public: resolve(__dirname, '../public'),
 };
 
 const main = async () => {
@@ -432,7 +432,7 @@ const main = async () => {
         {},
       );
 
-      await writeFile(`${DIRECTORIES.web}/${name}.html`, html);
+      await writeFile(`${DIRECTORIES.public}/${name}.html`, html);
     });
   } catch (error) {
     console.error(error);

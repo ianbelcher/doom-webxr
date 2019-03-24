@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@nrkn/wad": "0.0.2",
-    "image-size": "^0.7.1"
-  }
-}

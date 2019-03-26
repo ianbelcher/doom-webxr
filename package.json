@@ -15,14 +15,22 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.12.4",
     "http-server": "^0.11.1",
-    "image-size": "^0.7.1"
+    "image-size": "^0.7.1",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0"
+  },
+  "dependencies": {
+    "aframe": "^0.8.2",
+    "aframe-teleport-controls": "^0.3.1",
+    "babel-loader": "^8.0.5"
   },
   "scripts": {
     "serve": "http-server",
-    "build": "npm run build:clean && npm run build:static && npm run build:templates && npm run build:index",
+    "build": "npm run build:clean && npm run build:static && npm run build:templates && npm run build:app && npm run build:indexHtml",
     "build:clean": "rm -Rf public && mkdir -p public",
     "build:static": "cp -r src/static/* public",
-    "build:templates": "node src/index.js",
-    "build:index": "cp public/E1M1.html public/index.html"
+    "build:templates": "node scripts/build.js",
+    "build:app": "webpack --mode production --output public/app.js --module-bind js=babel-loader src/app/index.js",
+    "build:indexHtml": "cp public/E1M1.html public/index.html"
   }
 }

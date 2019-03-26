@@ -4,89 +4,10 @@
 <head>
   <meta charset="utf-8">
   <title>Doom <%- name %></title>
-  <script src="https://unpkg.com/aframe@0.8.2/dist/aframe-master.js"></script>
-  <script src="https://unpkg.com/aframe-teleport-controls@0.3.1/dist/aframe-teleport-controls.js"></script>
   <script>
-    AFRAME.registerComponent('sector', {
-      schema: {
-        vertices: {
-          default: ['-10 10', '-10 -10', '10 -10'],
-        },
-        height: { default: 10 },
-        face: { default: 'floor' },
-      },
-
-      init: function () {
-        const { data } = this;
-
-        const pts = [];
-        for (let i = 0; i < data.vertices.length; i++) {
-          const points = data.vertices[i].split(' ').map(x => parseFloat(x));
-          pts.push(new THREE.Vector2(points[0], points[1] * (this.data.face === 'floor' ? -1 : 1)));
-        }
-        const shape = new THREE.Shape(pts);
-
-        const extrudeSettings = {
-          depth: 0,
-          steps: 0,
-          bevelEnabled: false,
-          // bevelEnabled: true, bevelSegments: 8, steps: 8, bevelSize: 0.1, bevelThickness: 0.1 
-        };
-        this.geometry = new THREE.ExtrudeBufferGeometry(shape, extrudeSettings);
-        this.geometry.lookAt(new THREE.Vector3(0, this.data.face === 'ceiling' ? 10000 : -10000, 0));
-        this.mesh = new THREE.Mesh(this.geometry);
-        this.mesh.position.y = this.data.height;
-        this.el.setObject3D('mesh', this.mesh);
-      }
-    });
-
-    AFRAME.registerComponent('sprite', {
-      schema: {
-        assets: { default: '' },
-      },
-
-      init: function () {
-        const { data } = this;
-        const assets = data.assets.split(':');
-        const files = assets.map(i => `assets/${i}.png`);
-
-        this.textureLoader = new THREE.TextureLoader();
-        this.map = this.textureLoader.load(files[0]);
-        this.material = new THREE.SpriteMaterial({
-          map: this.map
-        });
-        this.sprite = new THREE.Sprite(this.material);
-
-        const { width, height } = map.assetSizes[assets[0]];
-        const valueX = SIZE_FACTOR * width;
-        const valueY = SIZE_FACTOR * height;
-
-        this.sprite.scale.set(valueX, valueY, 0);
-
-        this.el.setObject3D('mesh', this.sprite);
-      }
-    });
-
-
-    const updateSpriteAngles = ({ x: cx, z: cz }) => {
-      document.querySelectorAll('.sprite').forEach((sprite, index) => {
-        const { x: sx, z: sz } = sprite.getAttribute('position');
-        const angle = Math.atan2(cx - sx, cz - sz);
-        // const angle = Math.atan2( (cx + map.startPosition.x) - sx, (cz - map.startPosition.z) - sz );
-        sprite.object3D.rotation.y = angle;
-      });
-    }
-    let sprites;
-    let wasdDisabled = false;
-    AFRAME.registerComponent('listener', {
-      tick: function () {
-        if (!wasdDisabled) {
-          const position = this.el.getAttribute('position');
-          updateSpriteAngles({ x: position.x + <%- startPosition && startPosition.x -%>, z: position.z + (<%- startPosition && startPosition.z -%> * -1) });
-        }
-      }
-    });
+    var startPosition = <%- JSON.stringify(startPosition) -%>;
   </script>
+  <script src="app.js"></script>
   <style>
     @font-face {
       font-family: 'doom';
@@ -242,24 +163,6 @@
     <%_ }); -%>
 
   </a-scene>
-  <script>
-    const cameraRigElement = document.getElementById('cameraRig');
-    cameraRigElement.addEventListener('teleported', event => {
-      wasdDisabled = true;
-      updateSpriteAngles(event.detail.newPosition);
-    });
-
-    const removeIntroScreen = () => {
-      const introScreen = document.getElementById('introScreen');
-      introScreen && introScreen.parentElement.removeChild(introScreen);
-    }
-
-    document.addEventListener('keypress', removeIntroScreen);
-
-    document.getElementById('levelSelect').addEventListener('change', event => {
-      window.location = `/${event.target.value}.html`
-    })
-  </script>
   <!-- Matomo -->
   <script type="text/javascript">
     var _paq = window._paq || [];

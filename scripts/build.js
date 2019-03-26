@@ -1,5 +1,8 @@
-// This is a development build task, extraneous deps are ok as are console statements.
-/* eslint-disable import/no-extraneous-dependencies, no-console */
+// This is a development build task script so...
+// extraneous deps are ok
+// console statements are ok
+// Dynamic imports are ok
+/* eslint-disable import/no-extraneous-dependencies, no-console, import/no-dynamic-require */
 const { readFile: readFileCb, writeFile: writeFileCb } = require('fs');
 const { resolve } = require('path');
 const { promisify } = require('util');
@@ -7,20 +10,22 @@ const { promisify } = require('util');
 const { readWad, createObjectModel } = require('@nrkn/wad');
 const { renderFile: renderFileCb } = require('ejs');
 
-const ImageSizes = require('./library/image-sizes');
-const thingLookup = require('./library/things');
-const pointIsInPolygon = require('./library/point-is-in-polygon');
-const carveOutOverlappingPolygons = require('./library/carve-out-overlapping-polygons');
+const DIRECTORIES = {
+  assets: resolve(__dirname, '../src/static/assets'),
+  template: resolve(__dirname, '../src/template'),
+  public: resolve(__dirname, '../public'),
+  library: resolve(__dirname, '../src/library'),
+};
+
+const ImageSizes = require(`${DIRECTORIES.library}/image-sizes`);
+const thingLookup = require(`${DIRECTORIES.library}/things`);
+const pointIsInPolygon = require(`${DIRECTORIES.library}/point-is-in-polygon`);
+const carveOutOverlappingPolygons = require(`${DIRECTORIES.library}/carve-out-overlapping-polygons`);
 
 const readFile = promisify(readFileCb);
 const writeFile = promisify(writeFileCb);
 const renderFile = promisify(renderFileCb);
 
-const DIRECTORIES = {
-  assets: resolve(__dirname, './static/assets'),
-  template: resolve(__dirname, './template'),
-  public: resolve(__dirname, '../public'),
-};
 
 const main = async () => {
   try {

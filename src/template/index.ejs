@@ -13,22 +13,29 @@
       font-family: 'doom';
       src: url(doom.ttf) format('truetype');
     }
-    select {
-      font-family: 'doom';
-      background-color: #f00;
-      font-size: 30px;
-      color: black;
-    }
     p {
       font-family: monospace;
       font-weight: 600;
       color: #fcfc54;
       letter-spacing: -0.1rem;
-      font-size: 22px;
       text-align: center;
     }
-    .id {
-      background: blue;
+    select {
+      font-family: 'doom';
+      font-size: 3vw;
+      background-color: #f00;
+      color: black;
+    }
+    #introScreen {
+      font-size: 3vw;
+    }
+    @media (min-width: 800px) {
+      #introScreen {
+        font-size: 25px;
+      }
+      select {
+        font-size: 25px;
+      }
     }
     .highlight {
       color: white;
@@ -44,7 +51,8 @@
           <path d="m 1476.3012,1327.8121 -0.2917,-292.4969 -46.7662,163.4072 -46.7058,-162.6616 -0.2827,222.0343 -152.4945,-114.3724 11.559,-8.6664 -0.5292,-569.30683 144.9467,0.3774 43.4492,152.19623 43.5126,-152.40042 214.4342,0.69673 -70.3645,52.57665 -0.1246,814.42954 z M 78.328958,619.06163 7.1328025,565.73124 l 401.3006875,0.54398 45.93055,35.08717 0.0378,533.50351 12.16772,8.8133 -388.148567,291.252 z m 235.518822,416.21877 -0.15295,-307.89242 -10.75764,-8.78449 -83.44785,0.40375 -0.18291,387.17176 z m 152.39799,82.7814 -0.0717,-516.75483 47.07325,-35.27648 281.69722,-0.0156 46.98005,35.42167 0.17344,597.96244 -133.22444,100.1999 z m 223.12917,-399.76328 -71.04792,0.49268 -11.09868,8.52709 0.15885,308.10291 93.32018,69.9936 0.24947,-377.92826 z m 164.80854,481.66028 -0.34116,-598.79687 46.91876,-35.23879 282.06992,0.26967 47.2183,35.27898 -0.3246,515.55821 -241.33557,182.4526 z m 234.65122,-164.742 -0.03,-308.02638 -11.8726,-9.07298 -70.9365,0.23276 -11.40484,8.78228 0.70414,377.32652 z" style="fill:#000000;fill-opacity:1;stroke:none"/>
         </g>
       </svg>
-      <p>
+      <p style="margin-top: -50px;">
+        <span style="font-family: doom; color: black; font-size: 80px;">VR</span><br />
         <select id="levelSelect">
           <option>SELECT LEVEL</option>
           <option>E1M1</option>
@@ -97,10 +105,9 @@
       </p>
     </div>
   </div>
-  <a-scene>
-    <a-entity cursor="rayOrigin: mouse"></a-entity>
+  <a-scene antialias="true">
     <a-entity id="cameraRig" position="<%- startPosition ? startPosition.x: 0 %> <%- startPosition ? startPosition.y || 1.5 : 1.5 %> <%- startPosition ? startPosition.z * -1 : 0 %>" rotation="0 <%- startPosition.angle %> 0">
-      <a-entity id="head" camera="fov: 90;" listener wasd-controls="fly: true; acceleration: 180;" look-controls></a-entity>
+      <a-entity id="head" camera="fov: 90;" listener wasd-controls="fly: true; acceleration: 180;" twoway-motion="speed: 150;" tilt-turn="criticalAngle: 4; turnScale: 0.001;" look-controls></a-entity>
       <a-entity id="left-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trackpad; collision-entities: .floor;"
         vive-controls="hand: left" oculus-touch-controls="hand: left" microsoft-motion-controls="hand: left"
         daydream-controls="hand: left" gearvr-controls="hand: left">

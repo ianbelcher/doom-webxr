@@ -1,5 +1,6 @@
 import AFrame from 'aframe';
 import 'aframe-teleport-controls';
+import 'aframe-mobile-controls';
 
 // Window globals
 /* global window, document */
@@ -77,6 +78,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('keypress', removeIntroScreen);
   document.addEventListener('mousedown', (e) => {
+    if (e.target && e.target.id === 'introScreen') removeIntroScreen();
+  });
+  document.addEventListener('touchstart', (e) => {
     if (e.target && e.target.id === 'introScreen') removeIntroScreen();
   });
 

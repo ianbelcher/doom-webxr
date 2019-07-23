@@ -26,7 +26,7 @@ const isIEedge = winNav.userAgent.indexOf('Edge') > -1;
 const isIOSChrome = winNav.userAgent.match('CriOS');
 
 if (isIOSChrome) {
-  chromeBrowser = true;
+  // iOS chrome appears to work well.
 } else if (
   isChromium !== null
   && typeof isChromium !== 'undefined'

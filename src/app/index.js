@@ -1,4 +1,4 @@
-import AFrame from 'aframe';
+import AFRAME from 'aframe';
 import 'aframe-teleport-controls';
 import 'aframe-mobile-controls';
 
@@ -9,7 +9,37 @@ import 'aframe-mobile-controls';
 // Configuration globals
 /* global startPosition */
 
-AFrame.registerComponent('sector', {
+let chromeBrowser = false;
+// @see https://stackoverflow.com/a/13348618/981598
+// please note,
+// that IE11 now returns undefined again for window.chrome
+// and new Opera 30 outputs true for window.chrome
+// but needs to check if window.opr is not undefined
+// and new IE Edge outputs to true now for window.chrome
+// and if not iOS Chrome check
+// so use the below updated condition
+const isChromium = window.chrome;
+const winNav = window.navigator;
+const vendorName = winNav.vendor;
+const isOpera = typeof window.opr !== 'undefined';
+const isIEedge = winNav.userAgent.indexOf('Edge') > -1;
+const isIOSChrome = winNav.userAgent.match('CriOS');
+
+if (isIOSChrome) {
+  chromeBrowser = true;
+} else if (
+  isChromium !== null
+  && typeof isChromium !== 'undefined'
+  && vendorName === 'Google Inc.'
+  && isOpera === false
+  && isIEedge === false
+) {
+  chromeBrowser = true;
+} else {
+  // not Google Chrome
+}
+
+AFRAME.registerComponent('sector', {
   schema: {
     vertices: {
       default: ['-10 10', '-10 -10', '10 -10'],
@@ -32,7 +62,7 @@ AFrame.registerComponent('sector', {
       depth: 0,
       steps: 0,
       bevelEnabled: false,
-      // bevelEnabled: true, bevelSegments: 8, steps: 8, bevelSize: 0.1, bevelThickness: 0.1 
+      // bevelEnabled: true, bevelSegments: 8, steps: 8, bevelSize: 0.1, bevelThickness: 0.1
     };
     this.geometry = new THREE.ExtrudeBufferGeometry(shape, extrudeSettings);
     this.geometry.lookAt(new THREE.Vector3(0, this.data.face === 'ceiling' ? 10000 : -10000, 0));
@@ -48,14 +78,13 @@ const updateSpriteAngles = ({ x: cx, z: cz }) => {
     const angle = Math.atan2(cx - sx, cz - sz);
     // This call has side effects... This is the best and most effective way of doing the change.
     /* eslint-disable-next-line no-param-reassign */
-    debugger;
     sprite.object3D.rotation.y = angle;
   });
 };
 
 let wasdDisabled = false;
 
-AFrame.registerComponent('listener', {
+AFRAME.registerComponent('listener', {
   tick() {
     if (!wasdDisabled) {
       const position = this.el.getAttribute('position');
@@ -73,16 +102,26 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const removeIntroScreen = () => {
     const introScreen = document.getElementById('introScreen');
-    if (introScreen) introScreen.parentElement.removeChild(introScreen);
+    if (introScreen) {
+      introScreen.parentElement.removeChild(introScreen);
+      document.removeEventListener('keypress', removeIntroScreen);
+    }
+  };
+  const removeIntroScreenFromEvent = (e) => {
+    if (e.target && e.target.id === 'introScreen') {
+      removeIntroScreen();
+      document.removeEventListener('mousedown', removeIntroScreenFromEvent);
+      document.removeEventListener('touchstart', removeIntroScreenFromEvent);
+    }
   };
 
   document.addEventListener('keypress', removeIntroScreen);
-  document.addEventListener('mousedown', (e) => {
-    if (e.target && e.target.id === 'introScreen') removeIntroScreen();
-  });
-  document.addEventListener('touchstart', (e) => {
-    if (e.target && e.target.id === 'introScreen') removeIntroScreen();
-  });
+  document.addEventListener('mousedown', removeIntroScreenFromEvent);
+  document.addEventListener('touchstart', removeIntroScreenFromEvent);
+
+  if (chromeBrowser) {
+    document.getElementById('chromeWarning').style.display = 'block';
+  }
 
   document.getElementById('levelSelect').addEventListener('change', (event) => {
     window.location = `/${event.target.value}.html`;

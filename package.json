@@ -27,11 +27,10 @@
   },
   "scripts": {
     "serve": "http-server",
-    "build": "npm run build:clean && npm run build:static && npm run build:templates && npm run build:app && npm run build:indexHtml",
+    "build": "npm run build:clean && npm run build:static && npm run build:templates && npm run build:app",
     "build:clean": "rm -Rf public && mkdir -p public",
     "build:static": "cp -r src/static/* public",
     "build:templates": "node scripts/build.js",
-    "build:app": "webpack --mode production --output public/app.js --module-bind js=babel-loader src/app/index.js",
-    "build:indexHtml": "cp public/E1M1.html public/index.html"
+    "build:app": "webpack --mode production --output public/app.js --module-bind js=babel-loader src/app/index.js"
   }
 }

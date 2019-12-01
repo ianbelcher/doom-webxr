@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Doom Level <%- name %></title>
+  <script>
+    var startPosition = <%- JSON.stringify(startPosition) -%>;
+  </script>
+  <script src="app.js"></script>
+</head>
+
+<body>
+  <a-scene antialias="true">
+    <a-entity id="cameraRig" position="<%- startPosition ? startPosition.x: 0 %> <%- startPosition ? startPosition.y || 1.5 : 1.5 %> <%- startPosition ? startPosition.z * -1 : 0 %>" rotation="0 <%- startPosition.angle %> 0">
+      <a-entity id="head" camera="fov: 90;" listener wasd-controls="fly: true; acceleration: 180;" twoway-motion="speed: 200;" look-controls></a-entity>
+      <a-entity id="left-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trackpad; collision-entities: .floor;"
+        vive-controls="hand: left" oculus-touch-controls="hand: left" microsoft-motion-controls="hand: left"
+        daydream-controls="hand: left" gearvr-controls="hand: left">
+      </a-entity>
+      <a-entity id="right-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trackpad; collision-entities: .floor;"
+        vive-controls="hand: right" oculus-touch-controls="hand: right" microsoft-motion-controls="hand: right"
+        daydream-controls="hand: right" gearvr-controls="hand: right">
+      </a-entity>
+    </a-entity>
+
+    <a-entity light="type: ambient; color: #888"></a-entity>
+    <a-sky color="#000"></a-sky>
+
+    <a-image position="0 0 -1000" rotation="0 0 0" width="2000" geometry="" height="4000" class="sky" src="skys/01_FR.png" material=""></a-image>
+    <a-image position="0 0 1000" rotation="0 180 0" width="2000" geometry="" height="4000" class="sky" src="skys/01_BK.png" material=""></a-image>
+    <a-image position="-1000 0 0" rotation="0 90 0" width="2000" geometry="" height="4000" class="sky" src="skys/01_RT.png" material=""></a-image>
+    <a-image position="1000 0 0" rotation="0 -90 0" width="2000" geometry="" height="4000" class="sky" src="skys/01_LF.png" material=""></a-image>
+    <a-image position="0 2000 0" rotation="270 0 0" width="2000" geometry="" height="2000" class="sky" src="skys/01_UP.png" material=""></a-image>
+    <a-image position="0 -2000 0" rotation="-90 0 0" width="2000" geometry="" height="2000" class="sky" src="skys/01_DN.png" material=""></a-image>
+
+    <%_ polygons.forEach(({ floor, ceiling, floorHeight, ceilingHeight, polygon, isSky }, index) => { -%>
+    <a-entity
+      id="<%- 'floor-' + index -%>"
+      sector="height: <%- floorHeight -%>; face: floor; vertices: <%- polygon.map(polygon => `${polygon[0]} ${polygon[1]}`).join(', ') -%>;"
+      material="shader: standard; src: assets/<%- floor -%>.png; side: double; repeat: 0.325 0.325;"
+      class="floor"></a-entity>
+    <%_ if (!isSky) { -%>
+    <a-entity
+      id="<%- 'ceiling-' + index -%>"
+      sector=" height: <%- ceilingHeight -%>; face: ceiling; vertices: <%- polygon.map(polygon => `${polygon[0]} ${polygon[1]}`).join(', ') -%>;"
+      material="shader: standard; src: assets/<%- ceiling -%>.png; side: double; repeat: 0.325 0.325;"
+      class="ceiling"></a-entity>
+    <%_ } -%>
+    <%_ }); -%>
+
+    <%_ planes.forEach(({ width, x, y, z, height, rotation, src }, index) => { -%>
+    <%_ if (imageSizes[src]) { -%>
+    <a-plane
+      id="<%- 'plane-' + index -%>"
+      position="<%- x -%> <%- y -%> <%- z * -1 -%>"
+      rotation="0 <%- rotation * (180 / Math.PI) -%> 0"
+      material="shader: standard; src: assets/<%- src -%>.png; side: double; repeat: <%- (width / imageSizes[src].width) / SIZE_FACTOR -%> <%- (height / imageSizes[src].height) / SIZE_FACTOR -%>; alphaTest: 0.9;"
+      width="<%- width -%>"
+      height="<%- height -%>"
+      class="wall"></a-plane>
+    <%_ } -%>
+    <%_ }); -%>
+
+    <%_ sprites.forEach(({ x, y, z, src }, index) => { -%>
+    <%_ if (imageSizes[src[0]]) { -%>
+    <a-image
+      id="<%- 'sprite-' + index -%>"
+      position="<%- x -%> <%- y -%> <%- z * -1 -%>"
+      rotation="0 0 0"
+      src="assets/<%- src[0] -%>.png"
+      width="<%- imageSizes[src[0]].width * SIZE_FACTOR -%>"
+      height="<%- imageSizes[src[0]].height * SIZE_FACTOR -%>"
+      class="sprite"></a-image>
+    <%_ } -%>
+    <%_ }); -%>
+
+  </a-scene>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-149845903-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-149845903-2');
+  </script>
+</body>
+</html>

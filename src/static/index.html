@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doom-WebVR</title>
+  <style>
+    @font-face {
+      font-family: 'doom';
+      src: url(doom.ttf) format('truetype');
+    }
+    body {
+      background: black;
+      font-size: 15px;
+      margin: 0;
+    }
+    p {
+      font-family: monospace;
+      font-weight: 600;
+      color: #fcfc54;
+      letter-spacing: -0.1rem;
+      text-align: center;
+    }
+    select {
+      font-family: 'doom';
+      font-size: 15px;
+      background-color: #f00;
+      color: black;
+    }
+    .highlight {
+      color: white;
+    }
+    @media (min-width: 500px) {
+      body {
+        font-size: 20px;
+      }
+      select {
+        font-size: 20px;
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0;
+      }
+      25% {
+        opacity: 1;
+      }
+      75% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+
+    #chromeWarning {
+      display: none;
+      position: absolute;
+      z-index: 100;
+      bottom: 50%; 
+      padding: 10px; 
+      width: 100%; 
+      background: #f00; 
+      text-align: center; 
+      border: 5px solid black; 
+      font-family: monospace;
+      animation: pulse 2s infinite;
+      font-weight: 600;
+      color: white;
+      letter-spacing: -0.1rem;
+      box-sizing: border-box;
+      font-size: 18px;
+    }
+
+    .content {
+      box-sizing: border-box;
+      width: 500px;
+      background: #f00;
+      border: 5px solid black;
+      padding: 40px;
+      border-radius: 5px;
+      position: relative;
+      margin-top: 30px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @media (max-width: 500px) {
+      .content {
+        width: 100%;
+      }
+    }
+
+    .git-banner {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="chromeWarning">
+    You are using Chrome. You're not going to believe this, but Chrome does extremely poorly with A-Frame for some reason. Please switch to Firefox, Internet Explorer or Safari for better performance. See 
+    <a href="https://stackoverflow.com/questions/49503681/a-frame-performance-issue-in-chrome">here</a>
+  </div>
+  <div class="content">
+    <a href="https://github.com/ianbelcher/doom-webvr" class="git-banner"><img width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_left_darkblue_121621.png?resize=149%2C149" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1"></a>
+    <svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" version="1.1" id="games-rock" viewBox="0 0 1680 869.19995" height="200" width="100%">
+      <g transform="translate(-7.1328025,-565.73124)">
+        <path d="m 1476.3012,1327.8121 -0.2917,-292.4969 -46.7662,163.4072 -46.7058,-162.6616 -0.2827,222.0343 -152.4945,-114.3724 11.559,-8.6664 -0.5292,-569.30683 144.9467,0.3774 43.4492,152.19623 43.5126,-152.40042 214.4342,0.69673 -70.3645,52.57665 -0.1246,814.42954 z M 78.328958,619.06163 7.1328025,565.73124 l 401.3006875,0.54398 45.93055,35.08717 0.0378,533.50351 12.16772,8.8133 -388.148567,291.252 z m 235.518822,416.21877 -0.15295,-307.89242 -10.75764,-8.78449 -83.44785,0.40375 -0.18291,387.17176 z m 152.39799,82.7814 -0.0717,-516.75483 47.07325,-35.27648 281.69722,-0.0156 46.98005,35.42167 0.17344,597.96244 -133.22444,100.1999 z m 223.12917,-399.76328 -71.04792,0.49268 -11.09868,8.52709 0.15885,308.10291 93.32018,69.9936 0.24947,-377.92826 z m 164.80854,481.66028 -0.34116,-598.79687 46.91876,-35.23879 282.06992,0.26967 47.2183,35.27898 -0.3246,515.55821 -241.33557,182.4526 z m 234.65122,-164.742 -0.03,-308.02638 -11.8726,-9.07298 -70.9365,0.23276 -11.40484,8.78228 0.70414,377.32652 z" style="fill:#000000;fill-opacity:1;stroke:none"/>
+      </g>
+    </svg>
+    <p style="margin-top: -50px;">
+      <span style="font-family: doom; color: black; font-size: 80px;">VR</span><br />
+      <select id="levelSelect">
+        <option>SELECT LEVEL</option>
+        <option>E1M1</option>
+        <option>E1M2</option>
+        <option>E1M3</option>
+        <option>E1M4</option>
+        <option>E1M5</option>
+        <option>E1M6</option>
+        <option>E1M7</option>
+        <option>E1M8</option>
+        <option>E1M9</option>
+        <option>E2M1</option>
+        <option>E2M2</option>
+        <option>E2M3</option>
+        <option>E2M4</option>
+        <option>E2M5</option>
+        <option>E2M6</option>
+        <option>E2M7</option>
+        <option>E2M8</option>
+        <option>E2M9</option>
+        <option>E3M1</option>
+        <option>E3M2</option>
+        <option>E3M3</option>
+        <option>E3M4</option>
+        <option>E3M5</option>
+        <option>E3M6</option>
+        <option>E3M7</option>
+        <option>E3M8</option>
+        <option>E3M9</option>
+        <option>E4M1</option>
+        <option>E4M2</option>
+        <option>E4M3</option>
+        <option>E4M4</option>
+        <option>E4M5</option>
+        <option>E4M6</option>
+        <option>E4M7</option>
+        <option>E4M8</option>
+        <option>E4M9</option>
+      </select>
+
+      <br /><br />
+      <span class="highlight">DOOM</span>, the hellish 3-D game by <span class="id">id</span> Software.
+      <br /><br />
+      Converted to a webpage with <a href="https://threejs.org">three.js</a> and <a href="https://aframe.io/">aframe</a>.
+      <br /><br />
+      You can move around using the <span class="highlight">WASD</span> keys and mouse, or for an even better experience, open the site in Firefox and view it with <span class="id">VR</span> equipment such as <span class="highlight">Vive</span> or <span class="highlight">Rift</span>.
+      <br /><br />
+      There are still a number of bugs obviously, but its getting there...
+    </p>
+  </div>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-149845903-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'UA-149845903-2');
+  </script>
+  <script>
+    let chromeBrowser = false;
+    // @see https://stackoverflow.com/a/13348618/981598
+    // please note,
+    // that IE11 now returns undefined again for window.chrome
+    // and new Opera 30 outputs true for window.chrome
+    // but needs to check if window.opr is not undefined
+    // and new IE Edge outputs to true now for window.chrome
+    // and if not iOS Chrome check
+    // so use the below updated condition
+    const isChromium = window.chrome;
+    const winNav = window.navigator;
+    const vendorName = winNav.vendor;
+    const isOpera = typeof window.opr !== 'undefined';
+    const isIEedge = winNav.userAgent.indexOf('Edge') > -1;
+    const isIOSChrome = winNav.userAgent.match('CriOS');
+
+    if (isIOSChrome) {
+      // iOS chrome appears to work well.
+    } else if (
+      isChromium !== null
+      && typeof isChromium !== 'undefined'
+      && vendorName === 'Google Inc.'
+      && isOpera === false
+      && isIEedge === false
+    ) {
+      chromeBrowser = true;
+    } else {
+      // not Google Chrome
+    }
+    if (chromeBrowser) {
+      document.getElementById('chromeWarning').style.display = 'block';
+      document.getElementById('levelSelect').style.display = 'none';
+    }
+
+    document.getElementById('levelSelect').addEventListener('change', (event) => {
+      window.location = `/${event.target.value}.html`;
+    });
+  </script>
+</body>
+  
+</html>

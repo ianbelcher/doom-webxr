@@ -3,7 +3,7 @@ import 'aframe-teleport-controls';
 import 'aframe-mobile-controls';
 
 // Window globals
-/* global window, document */
+/* global window, document, DeviceMotionEvent */
 // Dependency globals
 /* global THREE */
 // Configuration globals
@@ -80,4 +80,7 @@ window.addEventListener('DOMContentLoaded', () => {
     wasdDisabled = true;
     updateSpriteAngles(event.detail.newPosition);
   });
+  // Request permission to access the devices motion sensors if there has been a touch event
+  // (and we're most likely on a mobile device)
+  document.addEventListener('touchend', DeviceMotionEvent.requestPermission);
 });

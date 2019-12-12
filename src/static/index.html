@@ -59,7 +59,7 @@
       display: none;
       position: absolute;
       z-index: 100;
-      bottom: 50%; 
+      top: 0;
       padding: 10px; 
       width: 100%; 
       background: #f00; 
@@ -206,7 +206,6 @@
     }
     if (chromeBrowser) {
       document.getElementById('chromeWarning').style.display = 'block';
-      document.getElementById('levelSelect').style.display = 'none';
     }
 
     document.getElementById('levelSelect').addEventListener('change', (event) => {

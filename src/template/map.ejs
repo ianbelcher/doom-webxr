@@ -13,7 +13,7 @@
 <body>
   <a-scene antialias="true">
     <a-entity id="cameraRig" position="<%- startPosition ? startPosition.x: 0 %> <%- startPosition ? startPosition.y || 1.5 : 1.5 %> <%- startPosition ? startPosition.z * -1 : 0 %>" rotation="0 <%- startPosition.angle %> 0">
-      <a-entity id="head" camera="fov: 90;" listener wasd-controls="fly: true; acceleration: 180;" twoway-motion="speed: 200;" look-controls></a-entity>
+      <a-entity id="head" camera="fov: 90;" listener wasd-controls="fly: true; acceleration: 180;" twoway-motion="speed: 500;" look-controls></a-entity>
       <a-entity id="left-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trackpad; collision-entities: .floor;"
         vive-controls="hand: left" oculus-touch-controls="hand: left" microsoft-motion-controls="hand: left"
         daydream-controls="hand: left" gearvr-controls="hand: left">

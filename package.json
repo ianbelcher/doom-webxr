@@ -27,6 +27,7 @@
   },
   "scripts": {
     "serve": "http-server",
+    "serve-secure": "http-server --ssl --cert self-signed-ssl/server.crt --key self-signed-ssl/server.key",
     "build": "npm run build:clean && npm run build:static && npm run build:templates && npm run build:app",
     "build:clean": "rm -Rf public && mkdir -p public",
     "build:static": "cp -r src/static/* public",

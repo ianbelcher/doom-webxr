@@ -1,16 +1,16 @@
-Doom WebVR
+Doom WebXR
 ==========
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/2748baae-4403-463c-998d-d9c07fa8be61/deploy-status)](https://doom-webvr.ianbelcher.me)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/2748baae-4403-463c-998d-d9c07fa8be61/deploy-status)](https://doom-webxr.ianbelcher.me)
 
 ![doom e1m1 screenshot](./static/doom-with-perspective.png)
 
 A personal project consisting of algorithms, mathematics, revisiting childhood memories, cutting edge browser API's and virtual reality.
 
 For more information on this project, please read 
-[this blog post](https://ianbelcher.me/tech-blog/building-a-webvr-version-of-doom)
+[this blog post](https://ianbelcher.me/tech-blog/building-a-webxr-version-of-doom)
 
-The current version can be accessed at https://doom-webvr.ianbelcher.me.
+The current version can be accessed at https://doom-webxr.ianbelcher.me.
 
 Development
 -----------

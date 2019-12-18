@@ -12,15 +12,15 @@
 
 <body>
   <a-scene antialias="true">
-    <a-entity id="cameraRig" position="<%- startPosition ? startPosition.x: 0 %> <%- startPosition ? startPosition.y || 1.5 : 1.5 %> <%- startPosition ? startPosition.z * -1 : 0 %>" rotation="0 <%- startPosition.angle %> 0">
-      <a-entity id="head" camera="fov: 90;" listener wasd-controls="fly: true; acceleration: 180;" twoway-motion="speed: 500;" look-controls></a-entity>
+    <a-entity id="cameraRig" position="<%- startPosition ? startPosition.x: 0 %> <%- startPosition ? startPosition.y || 0 : 0 %> <%- startPosition ? startPosition.z * -1 : 0 %>" rotation="0 <%- startPosition.angle %> 0">
+      <a-entity id="head" camera="fov: 90;" listener wasd-controls="fly: true; acceleration: 180;" twoway-motion="speed: 250;" look-controls></a-entity>
       <a-entity id="left-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trackpad; collision-entities: .floor;"
-        vive-controls="hand: left" oculus-touch-controls="hand: left" microsoft-motion-controls="hand: left"
-        daydream-controls="hand: left" gearvr-controls="hand: left">
+        hand-controls="left"
+        daydream-controls="hand: left" gearvr-controls="hand: left" oculus-go-controls="hand: left">
       </a-entity>
       <a-entity id="right-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head; button: trackpad; collision-entities: .floor;"
-        vive-controls="hand: right" oculus-touch-controls="hand: right" microsoft-motion-controls="hand: right"
-        daydream-controls="hand: right" gearvr-controls="hand: right">
+        hand-controls="right"
+        daydream-controls="hand: right" gearvr-controls="hand: right" oculus-go-controls="hand: right">
       </a-entity>
     </a-entity>
 

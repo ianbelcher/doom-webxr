@@ -15,7 +15,7 @@ module.exports = async (level, polygons) => {
   const sector = getSectorForPoint(scaled(x, 'x'), scaled(y, 'z'));
   return {
     x: scaled(x, 'x'),
-    y: sector ? sector.floorHeight + 1.5 : 0,
+    y: sector ? sector.floorHeight + 0.1 : 0,
     z: scaled(y, 'z'),
     angle: angle * (Math.PI / 180),
   };

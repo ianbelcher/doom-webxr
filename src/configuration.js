@@ -7,7 +7,8 @@ const DIRECTORIES = {
   library: resolve(__dirname, '../src/library'),
 };
 
-const SIZE_FACTOR = 0.0625;
+// const SIZE_FACTOR = 0.0625;
+const SIZE_FACTOR = 0.035;
 
 module.exports = {
   DIRECTORIES,

@@ -80,7 +80,4 @@ window.addEventListener('DOMContentLoaded', () => {
     wasdDisabled = true;
     updateSpriteAngles(event.detail.newPosition);
   });
-  // Request permission to access the devices motion sensors if there has been a touch event
-  // (and we're most likely on a mobile device)
-  document.addEventListener('touchend', DeviceMotionEvent.requestPermission);
 });

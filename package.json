@@ -3,27 +3,27 @@
     "node": ">=11"
   },
   "devDependencies": {
-    "@babel/core": "^7.4.0",
-    "@babel/node": "^7.2.2",
+    "@babel/core": "7.7.5",
+    "@babel/node": "7.7.4",
     "@nrkn/wad": "0.0.2",
-    "babel-preset-airbnb": "^3.2.1",
-    "ejs": "^2.6.1",
-    "eslint": "^5.3.0",
-    "eslint-config-airbnb": "^17.1.0",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-plugin-import": "^2.16.0",
-    "eslint-plugin-jsx-a11y": "^6.2.1",
-    "eslint-plugin-react": "^7.12.4",
-    "http-server": "^0.11.1",
-    "image-size": "^0.7.1",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0"
+    "babel-preset-airbnb": "4.4.0",
+    "ejs": "3.0.1",
+    "eslint": "6.7.2",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-config-airbnb-base": "14.0.0",
+    "eslint-plugin-import": "2.19.1",
+    "eslint-plugin-jsx-a11y": "6.2.3",
+    "eslint-plugin-react": "7.17.0",
+    "http-server": "0.12.0",
+    "image-size": "0.8.3",
+    "webpack": "4.41.3",
+    "webpack-cli": "3.3.10"
   },
   "dependencies": {
-    "aframe": "^0.9.2",
+    "aframe": "git://github.com/aframevr/aframe.git#2140c8bed932e428a1b809c4f4c16d13d40ef142",
     "aframe-mobile-controls": "0.0.5",
     "aframe-teleport-controls": "^0.3.1",
-    "babel-loader": "^8.0.5"
+    "babel-loader": "8.0.6"
   },
   "scripts": {
     "serve": "http-server",

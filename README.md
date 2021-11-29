@@ -1,7 +1,7 @@
 Doom WebXR
 ==========
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/2748baae-4403-463c-998d-d9c07fa8be61/deploy-status)](https://doom-webxr.ianbelcher.me)
+![Netlify Status](https://api.netlify.com/api/v1/badges/87f1bfe6-3aa4-4991-b15f-251e0dcdacb3/deploy-status)
 
 ![doom e1m1 screenshot](./static/doom-with-perspective.png)
 

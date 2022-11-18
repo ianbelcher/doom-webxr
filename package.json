@@ -17,7 +17,7 @@
     "http-server": "0.12.0",
     "image-size": "0.8.3",
     "webpack": "4.41.3",
-    "webpack-cli": "3.3.10"
+    "webpack-cli": "3.3.12"
   },
   "dependencies": {
     "aframe": "git://github.com/aframevr/aframe.git#2140c8bed932e428a1b809c4f4c16d13d40ef142",
